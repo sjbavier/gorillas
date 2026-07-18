@@ -389,6 +389,21 @@ impl GameState {
             format!("{}        {}", self.players[1].name, self.players[1].score),
         ]
     }
+
+    pub fn continue_after_game_over(&mut self) {
+        if self.screen != ScreenState::GameOver {
+            return;
+        }
+
+        self.active_shot = None;
+        self.victory_dance = None;
+        self.gorilla_explosion = None;
+        self.shot_explosion = None;
+        self.last_shot = None;
+        self.completed_rounds = 0;
+        self.setup_completed = false;
+        self.screen = ScreenState::Setup;
+    }
 }
 
 #[allow(dead_code)]
@@ -710,6 +725,31 @@ mod tests {
                 "Player 2        0".to_string()
             ]
         );
+
+        state.continue_after_game_over();
+        assert_eq!(state.screen, ScreenState::Setup);
+        assert!(!state.setup_completed);
+        assert_eq!(state.completed_rounds, 0);
+        assert!(state.active_shot.is_none());
+        assert!(state.victory_dance.is_none());
+    }
+
+    #[test]
+    fn continue_after_game_over_only_applies_on_game_over_screen() {
+        let config = GameConfig::default();
+        let mut rng = StdRng::seed_from_u64(123);
+        let mut state = GameState::new_with_rng(config, &mut rng);
+
+        state.continue_after_game_over();
+        assert_eq!(state.screen, ScreenState::Playing);
+        assert!(state.setup_completed);
+
+        state.screen = ScreenState::GameOver;
+        state.completed_rounds = 2;
+        state.continue_after_game_over();
+        assert_eq!(state.screen, ScreenState::Setup);
+        assert!(!state.setup_completed);
+        assert_eq!(state.completed_rounds, 0);
     }
 
     #[test]

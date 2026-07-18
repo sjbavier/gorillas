@@ -2,26 +2,27 @@
 
 ## Snapshot
 
-- Last updated: 2026-07-17 23:14 EDT
+- Last updated: 2026-07-17 23:17 EDT
 - Working directory: `/home/b4v1n4t0r/rust_projects/gorillas`
-- Current commit: latest commit will be `Add setup and intro menu flow` after this handoff commit.
+- Current commit: this commit (`Return to setup after game over`).
 - Source reference: `GORILLA.BAS`
 - Current backend: windowed 2D via `minifb` (`macroquad` was preferred initially but failed on the available toolchain/dependency set).
-- Latest verified commands: `cargo fmt` and `cargo test` (27 tests) passed after setup/menu work; `cargo check` passed after setup/menu work.
+- Latest verified commands: `cargo fmt`, `cargo test` (28 tests), and `cargo check` passed after game-over continuation work.
 
 ## Current implementation status
 
 - Cargo binary crate exists and builds at fixed EGA-like target resolution 640x350.
 - Module skeletons exist: `main`, `config`, `entities`, `game`, `city`, `physics`, `render`, `input`, and `audio`.
-- Startup now shows a QBasic-inspired intro screen, waits for any key, collects setup input, shows a `V = View Intro` / `P = Play Game` menu, and then starts local gameplay.
+- Startup shows a QBasic-inspired intro screen, waits for any key, collects setup input, shows a `V = View Intro` / `P = Play Game` menu, and then starts local gameplay.
 - Setup input collects Player 1/Player 2 names (blank defaults; 10-char max), fixed round count (blank default 3), and gravity (blank default 9.8), then applies those values to `GameState` before the menu.
+- Game-over screen shows final scores/rounds and now accepts any key to return to setup for another match, matching the original post-game flow more closely.
 - City skyline generation/rendering is implemented with buildings, windows, wind generation, and wind arrow.
 - Core entities include `Point`, `Bounds`, `ArmPose`, `SunMood`, `ShotResult`, `PlayerCommand::SubmitShot`, `Player`, `Gorilla`, and `Sun`.
 - Game state generates a city, places gorillas, creates a sun, tracks current turn, scores, completed rounds, a fixed `round_limit`, active shot animation, generic building-hit shot explosions, gorilla hit explosions, victory dance, and `ScreenState::{Intro, Setup, Menu, Playing, GameOver}`.
 - Local input is separate from rules: setup/menu/key-continue events and per-turn `SubmitShot` commands flow into game state.
 - Renderer draws intro/setup/menu screens, gameplay skyline/wind/sun/gorillas/header/prompts/banana/explosions/victory dance, and final game-over scores.
 - Rendering-independent banana trajectory helpers cover player-2 angle mirroring, EGA spawn offsets, QBasic projectile coordinates, rotation frames, off-screen detection, and geometry-based shot resolution.
-- Unit tests cover city bounds/window bounds, wind range, gorilla placement, trajectory formula, wind acceleration, spawn offsets, player-2 angle transform, off-screen stop behavior, shot collision outcomes, active shot creation, sun shock/reset, setup defaults/limits, setup flow state transitions, shot input validation/commands, score mapping, round/game-over flow, explosions, and victory dance.
+- Unit tests cover city bounds/window bounds, wind range, gorilla placement, trajectory formula, wind acceleration, spawn offsets, player-2 angle transform, off-screen stop behavior, shot collision outcomes, active shot creation, sun shock/reset, setup defaults/limits, setup flow state transitions, shot input validation/commands, score mapping, round/game-over flow, game-over continuation, explosions, and victory dance.
 
 ## Active decisions and constraints
 
@@ -38,30 +39,27 @@
 
 ## Latest completed task
 
-- Selected task: implement setup/menu flow for player names, fixed round count, gravity, keypress-to-continue intro, and menu choice handling.
-- Changed files: `src/game.rs`, `src/input.rs`, `src/main.rs`, `src/render.rs`, `tasks/task.md`, `tasks/state.md`.
+- Selected task: implement game-over keypress behavior to return to setup/menu for another match.
+- Changed files: `src/game.rs`, `src/main.rs`, `src/render.rs`, `tasks/task.md`, `tasks/state.md`.
 - Summary:
-  - Added `ScreenState::{Intro, Setup, Menu}` alongside existing playing/game-over states.
-  - Added setup application and menu/start-match transitions in `GameState` while leaving legacy tests able to construct a playable state.
-  - Added `SetupInputState`, setup parsing/defaults, any-key continue handling, and `V`/`P` menu events in `input.rs`.
-  - Updated the main loop to route input/rendering by screen state.
-  - Added renderer screens for intro, setup, and menu, and removed the intro text overlay from active gameplay.
-  - Added tests for setup defaults/limits and setup/menu state flow.
+  - Added `GameState::continue_after_game_over` to transition from `GameOver` back to `Setup`, reset transient animation/shot state, clear completed-round count, and require setup confirmation before the next match.
+  - Routed game-over any-key input in `main.rs` and reset setup input fields for the next match.
+  - Changed game-over footer from `Press Esc to quit` to `Press any key to continue`.
+  - Added tests for game-over continuation and guarded no-op behavior outside the game-over screen.
 - Verification:
   - `cargo fmt` passed.
-  - `cargo test` passed: 27 tests.
+  - `cargo test` passed: 28 tests.
   - `cargo check` passed.
-- Commit: `Add setup and intro menu flow` (to be created after final verification/state update).
+- Commit: this commit (`Return to setup after game over`).
 
 ## Known issues / deferred work
 
 - Tracked `target/` build artifacts exist from earlier repository history and become dirty after Cargo commands; avoid staging them for implementation commits.
 - Setup text input currently supports uppercase letters, digits, spaces, and decimal points; shifted punctuation/lowercase/numpad edge cases may need polish.
 - The menu's `V = View Intro` returns to the text intro rather than reproducing the full original gorilla musical intro animation.
-- Game-over screen currently instructs Esc to quit; original waits for any key and returns to setup, which remains deferred.
 - Banana animation, explosions, and victory dance are frame-advanced rather than time-accumulated, so speed still needs tuning.
 - Building explosions are visual only; they do not yet remove/damage city geometry.
 
 ## Next recommended task
 
-- Implement game-over keypress behavior to return to setup/menu for another match, then add a manual test checklist for the now-playable local flow.
+- Add a manual test checklist/build-run documentation for the now-playable local flow, then consider implementing no-op audio stubs or timing/speed tuning.

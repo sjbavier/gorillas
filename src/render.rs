@@ -221,7 +221,7 @@ impl Renderer {
 
         let rounds = format!("Rounds played: {}", state.completed_rounds);
         self.draw_centered_text(&rounds, 200, 1, 0xffff55);
-        self.draw_centered_text("Press Esc to quit", 326, 1, palette.text);
+        self.draw_centered_text("Press any key to continue", 326, 1, palette.text);
     }
 
     fn draw_score_header(&mut self, state: &GameState) {

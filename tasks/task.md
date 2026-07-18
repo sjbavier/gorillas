@@ -150,8 +150,8 @@ Tasks:
 - [ ] Implement menu choice:
   - [x] View intro animation.
   - [x] Play game.
-- [ ] Implement game-over screen and final score.
-- [ ] Decide whether to loop back for another match after game over.
+- [x] Implement game-over screen and final score.
+- [x] Decide whether to loop back for another match after game over.
 
 ## Rendering tasks
 
@@ -389,7 +389,7 @@ Tasks:
   - [x] Banana can hit sun and change expression.
   - [ ] Banana can hit each gorilla.
   - [ ] Scores update correctly.
-  - [ ] Game-over screen appears.
+  - [x] Game-over screen appears.
 
 ## Suggested implementation phases
 

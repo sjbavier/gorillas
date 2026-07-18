@@ -85,7 +85,12 @@ fn main() -> Result<(), minifb::Error> {
                 }
                 game.update_animation();
             }
-            ScreenState::GameOver => {}
+            ScreenState::GameOver => {
+                if input::any_continue_key_pressed(&window) {
+                    game.continue_after_game_over();
+                    setup_input = SetupInputState::new();
+                }
+            }
         }
 
         if game.screen == ScreenState::Setup {
