@@ -295,7 +295,7 @@ Tasks:
   - [x] Sun.
   - [x] Bottom/screen edges.
 - [x] Preserve original low-velocity behavior where velocity `< 2` can result in self-hit logic.
-- [ ] Trigger generic explosion for city/building hits.
+- [x] Trigger generic explosion for city/building hits.
 - [x] Trigger gorilla explosion for gorilla hits.
 - [x] Trigger score update for gorilla hits.
 
@@ -317,12 +317,12 @@ Behavior to preserve:
 
 Tasks:
 
-- [ ] Decide whether to preserve fixed-round behavior or implement true play-to-N-points behavior; document decision.
+- [x] Decide whether to preserve fixed-round behavior or implement true play-to-N-points behavior; document decision.
 - [x] Implement alternating turns.
 - [x] Implement score updates.
 - [x] Handle self-hit scoring; opponent should receive point.
 - [x] Show current score during gameplay.
-- [ ] Show final score on game-over screen.
+- [x] Show final score on game-over screen.
 
 ## Input handling
 
@@ -422,9 +422,9 @@ Tasks:
 - [x] Detect sun interactions.
 - [ ] Add explosions.
   - [x] Add gorilla-specific explosion before victory dance.
-  - [ ] Add generic city/building explosion.
+  - [x] Add generic city/building explosion.
 - [x] Add victory dance.
-- [ ] Add scoring and game-over flow.
+- [x] Add scoring and game-over flow.
 
 ### Phase 5: Polish
 

@@ -11,7 +11,8 @@ use crate::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ScreenState {
-    Intro,
+    Playing,
+    GameOver,
 }
 
 #[derive(Clone, Debug)]
@@ -136,6 +137,8 @@ pub struct GameState {
     pub config: GameConfig,
     pub players: [Player; 2],
     pub screen: ScreenState,
+    pub round_limit: u32,
+    pub completed_rounds: u32,
     pub city: City,
     pub gorillas: [Gorilla; 2],
     pub sun: Sun,
@@ -160,7 +163,9 @@ impl GameState {
         Self {
             config,
             players: [Player::new(0, "Player 1"), Player::new(1, "Player 2")],
-            screen: ScreenState::Intro,
+            screen: ScreenState::Playing,
+            round_limit: 3,
+            completed_rounds: 0,
             city,
             gorillas,
             sun,
@@ -179,7 +184,8 @@ impl GameState {
     /// view. Later input/network code can call this with submitted shot commands
     /// instead of having rendering own turn rules.
     pub fn submit_shot(&mut self, player_index: usize, angle_degrees: f32, velocity: f32) -> bool {
-        if player_index >= self.gorillas.len()
+        if self.screen != ScreenState::Playing
+            || player_index >= self.gorillas.len()
             || player_index != self.current_turn
             || !self.accepts_shot_input()
         {
@@ -218,13 +224,18 @@ impl GameState {
     }
 
     pub fn accepts_shot_input(&self) -> bool {
-        self.active_shot.is_none()
+        self.screen == ScreenState::Playing
+            && self.active_shot.is_none()
             && self.victory_dance.is_none()
             && self.gorilla_explosion.is_none()
             && self.shot_explosion.is_none()
     }
 
     pub fn update_animation(&mut self) {
+        if self.screen == ScreenState::GameOver {
+            return;
+        }
+
         if let Some(victory_dance) = &mut self.victory_dance {
             let winner_index = victory_dance.winner_index;
             self.gorillas[winner_index].pose = victory_dance.pose();
@@ -241,6 +252,7 @@ impl GameState {
             if gorilla_explosion.advance() {
                 self.gorilla_explosion = None;
                 self.players[scoring_player_index].score += 1;
+                self.completed_rounds += 1;
                 self.begin_victory_dance(scoring_player_index);
             }
             return;
@@ -303,6 +315,11 @@ impl GameState {
     }
 
     fn start_next_round(&mut self) {
+        if self.completed_rounds >= self.round_limit {
+            self.screen = ScreenState::GameOver;
+            return;
+        }
+
         let mut rng = StdRng::from_entropy();
         self.city = City::generate(&self.config, &mut rng);
         self.gorillas = place_gorillas(&self.city, &mut rng);
@@ -310,6 +327,14 @@ impl GameState {
         self.gorillas
             .iter_mut()
             .for_each(|gorilla| gorilla.pose = ArmPose::Down);
+        self.screen = ScreenState::Playing;
+    }
+
+    pub fn final_score_lines(&self) -> [String; 2] {
+        [
+            format!("{}        {}", self.players[0].name, self.players[0].score),
+            format!("{}        {}", self.players[1].name, self.players[1].score),
+        ]
     }
 }
 
@@ -575,6 +600,35 @@ mod tests {
 
         assert!(state.victory_dance.is_none());
         assert_ne!(state.city, original_city);
+    }
+
+    #[test]
+    fn fixed_round_limit_shows_game_over_after_configured_rounds() {
+        let config = GameConfig::default();
+        let mut rng = StdRng::seed_from_u64(123);
+        let mut state = GameState::new_with_rng(config, &mut rng);
+        state.round_limit = 1;
+
+        state.begin_gorilla_explosion(1, 0);
+        for _ in 0..GorillaExplosion::TOTAL_FRAMES {
+            state.update_animation();
+        }
+        for _ in 0..VictoryDance::TOTAL_FRAMES {
+            state.update_animation();
+        }
+
+        assert_eq!(state.players[0].score, 1);
+        assert_eq!(state.completed_rounds, 1);
+        assert_eq!(state.screen, ScreenState::GameOver);
+        assert!(!state.accepts_shot_input());
+        assert!(!state.submit_shot(0, 45.0, 10.0));
+        assert_eq!(
+            state.final_score_lines(),
+            [
+                "Player 1        1".to_string(),
+                "Player 2        0".to_string()
+            ]
+        );
     }
 
     #[test]

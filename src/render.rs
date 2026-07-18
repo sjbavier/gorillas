@@ -8,7 +8,7 @@ use crate::{
     city::City,
     config::Color,
     entities::{ArmPose, Gorilla, Sun, SunMood},
-    game::{ActiveShot, GameState, GorillaExplosion, ShotExplosion},
+    game::{ActiveShot, GameState, GorillaExplosion, ScreenState, ShotExplosion},
     input::{ShotInputField, ShotInputState},
 };
 
@@ -28,10 +28,13 @@ impl Renderer {
     }
 
     pub fn draw(&mut self, state: &GameState, shot_input: Option<&ShotInputState>) {
-        self.draw_intro(state, shot_input);
+        match state.screen {
+            ScreenState::Playing => self.draw_playing(state, shot_input),
+            ScreenState::GameOver => self.draw_game_over(state),
+        }
     }
 
-    pub fn draw_intro(&mut self, state: &GameState, shot_input: Option<&ShotInputState>) {
+    pub fn draw_playing(&mut self, state: &GameState, shot_input: Option<&ShotInputState>) {
         let palette = state.config.palette;
         self.clear(palette.background);
         self.draw_sun(&state.sun, palette.sun, palette.background);
@@ -94,6 +97,21 @@ impl Renderer {
             self.draw_shot_prompt(state, shot_input);
         }
         self.draw_centered_text("Enter angle and velocity - Esc quits", 326, 2, 0xffff55);
+    }
+
+    fn draw_game_over(&mut self, state: &GameState) {
+        let palette = state.config.palette;
+        self.clear(0);
+        self.draw_centered_text("GAME OVER!", 96, 2, palette.text);
+        self.draw_centered_text("Score:", 132, 1, palette.text);
+
+        let lines = state.final_score_lines();
+        self.draw_text(&lines[0], 240, 152, 1, palette.text);
+        self.draw_text(&lines[1], 240, 168, 1, palette.text);
+
+        let rounds = format!("Rounds played: {}", state.completed_rounds);
+        self.draw_centered_text(&rounds, 200, 1, 0xffff55);
+        self.draw_centered_text("Press Esc to quit", 326, 1, palette.text);
     }
 
     fn draw_score_header(&mut self, state: &GameState) {
