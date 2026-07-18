@@ -6,7 +6,7 @@
 
 use rand::Rng;
 
-use crate::config::{rgb, Color, GameConfig};
+use crate::config::{Color, GameConfig};
 
 pub const BOTTOM_LINE: i32 = 335;
 const START_X: i32 = 2;
@@ -105,8 +105,15 @@ impl City {
             }
 
             let y = BOTTOM_LINE - height;
-            let color = building_color(rng.gen_range(1..=3));
-            let windows = generate_windows(x, height, width, rng, config.palette.window);
+            let color = building_color(rng.gen_range(1..=3), &config.palette.building_colors);
+            let windows = generate_windows(
+                x,
+                height,
+                width,
+                rng,
+                config.palette.window,
+                config.palette.unlit_window,
+            );
             buildings.push(Building {
                 x,
                 y,
@@ -134,6 +141,7 @@ fn generate_windows(
     building_width: i32,
     rng: &mut impl Rng,
     lit_color: Color,
+    unlit_color: Color,
 ) -> Vec<WindowRect> {
     let mut windows = Vec::new();
     let mut column_x = building_x + 3;
@@ -142,7 +150,7 @@ fn generate_windows(
         let mut i = building_height - 3;
         while i >= 7 {
             let color = if rng.gen_range(1..=4) == 1 {
-                rgb(85, 85, 85)
+                unlit_color
             } else {
                 lit_color
             };
@@ -173,11 +181,11 @@ pub fn generate_wind(rng: &mut impl Rng) -> i32 {
     wind
 }
 
-fn building_color(choice: i32) -> Color {
+fn building_color(choice: i32, palette: &[Color; 3]) -> Color {
     match choice {
-        1 => rgb(170, 0, 0),
-        2 => rgb(170, 0, 170),
-        _ => rgb(170, 85, 0),
+        1 => palette[0],
+        2 => palette[1],
+        _ => palette[2],
     }
 }
 

@@ -176,7 +176,7 @@ Tasks:
   - [ ] Pixel-color collision like QBasic `POINT`, or
   - [x] Geometry-based collision against buildings/gorillas/sun.
 - [x] Implement text centering equivalent to `Center`.
-- [ ] Implement color palette mapping for background, gorillas, buildings, windows, sun, explosion, banana.
+- [x] Implement color palette mapping for background, gorillas, buildings, windows, sun, explosion, banana.
 - [ ] Implement screen scaling equivalent to `Scl(n)` if supporting multiple resolutions.
 
 ## City skyline generation
@@ -442,7 +442,7 @@ Tasks:
 - [x] `SparklePause` -> keypress wait, optional border animation.
 - [x] `GetInputs` -> setup input screen.
 - [x] `GorillaIntro` -> menu/intro animation state.
-- [ ] `SetScreen` -> palette/theme setup.
+- [x] `SetScreen` -> palette/theme setup.
 - [x] `MakeCityScape` -> `city::generate_city`.
 - [x] `PlaceGorillas` -> `game::place_gorillas`.
 - [x] `DrawGorilla` -> `render::draw_gorilla` or sprite asset generation.

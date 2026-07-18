@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Last updated: 2026-07-18 14:51 EDT
+- Last updated: 2026-07-18 15:31 EDT
 - Working directory: `/home/b4v1n4t0r/rust_projects/gorillas`
-- Current commit: `Add global escape quit binding` (latest commit for this pass; inspect `git log` for exact hash).
+- Current commit: `Map renderer colors through QBasic palette` (latest commit for this pass; inspect `git log` for exact hash).
 - Source reference: `GORILLA.BAS`
 - Current backend: windowed 2D via `minifb` (`macroquad` was preferred initially but failed on the available toolchain/dependency set).
-- Latest verified commands: `cargo fmt`, `cargo test` (34 tests), and `cargo check` passed after escape/quit support polish.
+- Latest verified commands: `cargo fmt`, `cargo test` (36 tests), and `cargo check` passed after QBasic palette mapping.
 
 ## Current implementation status
 
@@ -23,10 +23,11 @@
 - Local input is separate from rules: setup/menu/key-continue events and per-turn `SubmitShot` commands flow into game state.
 - Renderer draws intro/setup/menu screens, gameplay skyline/wind/sun/gorillas/header/prompts/banana/explosions/victory dance, and final game-over scores.
 - Renderer primitive helpers cover clear, pixel text, QBasic-style centered text support, line drawing, rectangle outline/fill, circles/arcs, and set/get pixel access; helper behavior has unit-test coverage.
+- Config now centralizes QBasic SCREEN 9/EGA color attributes and semantic palette colors for background, gorilla/object, buildings, lit/unlit windows, sun, explosion/wind, text, prompts, and banana.
 - Rendering-independent banana trajectory helpers cover player-2 angle mirroring, EGA spawn offsets, QBasic projectile coordinates, rotation frames, off-screen detection, and geometry-based shot resolution.
 - Animation uses elapsed frame time from `main` and a 0.02-second logical animation step, matching QBasic `Rest .02` shot pacing intent while avoiding busy waits; catch-up work is capped per rendered frame.
 - Audio output is intentionally out of scope for the first playable version. `audio.rs` exposes no-op intro/throw/explosion/gorilla-explosion/victory methods, and `GameState` queues rendering-independent `AudioCue`s for gameplay events.
-- Unit tests cover city bounds/window bounds, wind range, gorilla placement, trajectory formula, wind acceleration, spawn offsets, player-2 angle transform, off-screen stop behavior, shot collision outcomes, active shot creation, sun shock/reset, setup defaults/limits, setup flow state transitions, shot input validation/commands, global quit key mapping, score mapping, round/game-over flow, game-over continuation, explosions, victory dance, audio cue queuing, delta-time animation accumulation/catch-up capping, and renderer helper primitives.
+- Unit tests cover config palette mapping, city bounds/window bounds, wind range, gorilla placement, trajectory formula, wind acceleration, spawn offsets, player-2 angle transform, off-screen stop behavior, shot collision outcomes, active shot creation, sun shock/reset, setup defaults/limits, setup flow state transitions, shot input validation/commands, global quit key mapping, score mapping, round/game-over flow, game-over continuation, explosions, victory dance, audio cue queuing, delta-time animation accumulation/catch-up capping, and renderer helper primitives.
 - `README.md` documents build/run commands, controls, local flow, scope notes, and a manual test checklist for the playable local flow.
 
 ## Active decisions and constraints
@@ -41,21 +42,23 @@
 - Round/game-over policy intentionally preserves original `PlayGame`: the prompt says "Play to how many total points", but the implementation treats it as a fixed number of rounds.
 - QBasic city slope quirk: Rust intentionally maps slope value `6` to `InvertedV` to preserve apparent design intent rather than duplicating the unreachable `CASE 4` behavior.
 - Collision strategy: use geometry-based collision against buildings, gorilla bounds, sun radius, and screen/bottom thresholds. QBasic used pixel-color collision with `POINT`, but geometry is simpler and keeps core logic rendering-independent.
+- Palette strategy: keep QBasic attribute constants and semantic colors centralized in `config.rs`; renderer/city should consume semantic palette fields rather than hard-coded gameplay colors.
 - `tasks/state.md` should stay compact. Use Git history for detailed chronological logs.
 
 ## Latest completed task
 
-- Selected task: add escape/quit support polish for setup/menu/gameplay input.
-- Changed files: `src/input.rs`, `tasks/task.md`, `tasks/state.md`.
+- Selected task: tune color palette mapping toward the original EGA/QBasic look.
+- Changed files: `src/config.rs`, `src/city.rs`, `src/render.rs`, `tasks/task.md`, `tasks/state.md`.
 - Summary:
-  - Added a named `QUIT_KEY` constant and `key_requests_quit` helper so the global quit binding is explicit and test-covered.
-  - Kept `quit_requested` as the single main-loop exit check, using window close or `Esc` to quit from every screen.
-  - Marked escape/quit support complete in `tasks/task.md`.
+  - Added QBasic SCREEN 9 attribute constants, a `qbasic_screen9_color` mapper, and semantic `Palette::qbasic_ega` fields.
+  - Routed city building/window generation through semantic palette colors instead of local hard-coded colors.
+  - Routed renderer screen clears, menu gorilla feature color, banana color, prompt/score highlight text, dim text, and alternate gorilla explosion ring color through palette helpers.
+  - Marked palette mapping and `SetScreen` checklist items complete in `tasks/task.md`.
 - Verification:
   - `cargo fmt` passed.
-  - `cargo test` passed: 34 tests.
+  - `cargo test` passed: 36 tests.
   - `cargo check` passed.
-- Commit: `Add global escape quit binding` (latest commit for this pass; inspect `git log` for exact hash).
+- Commit: `Map renderer colors through QBasic palette` (latest commit for this pass; inspect `git log` for exact hash).
 
 ## Known issues / deferred work
 
@@ -68,4 +71,4 @@
 
 ## Next recommended task
 
-- Tune color palette mapping toward the original EGA/QBasic look and document any intentional gameplay-faithful deviations.
+- Add deterministic random seed support for repeatable tests and optional reproducible local scenes.

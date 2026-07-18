@@ -42,9 +42,10 @@ impl Renderer {
     }
 
     pub fn draw_setup(&mut self, setup_input: Option<&SetupInputState>) {
-        let text = 0xffffff;
-        let dim = 0xc0c0c0;
-        self.clear(0);
+        let palette = crate::config::Palette::qbasic_ega();
+        let text = palette.text;
+        let dim = palette.dim_text;
+        self.clear(palette.black);
         self.draw_centered_text("Q B a s i c    G O R I L L A S", 44, 2, text);
         self.draw_text(
             "Name of Player 1 (Default = 'Player 1'):",
@@ -119,9 +120,14 @@ impl Renderer {
 
     fn draw_intro(&mut self, state: &GameState) {
         let palette = state.config.palette;
-        self.clear(0);
+        self.clear(palette.black);
         self.draw_centered_text("Q B a s i c    G O R I L L A S", 52, 2, palette.text);
-        self.draw_centered_text("Copyright (C) IBM Corporation 1991", 84, 1, 0xc0c0c0);
+        self.draw_centered_text(
+            "Copyright (C) IBM Corporation 1991",
+            84,
+            1,
+            palette.dim_text,
+        );
         self.draw_centered_text(
             "Your mission is to hit your opponent with the exploding",
             124,
@@ -157,7 +163,7 @@ impl Renderer {
 
     fn draw_menu(&mut self, state: &GameState) {
         let palette = state.config.palette;
-        self.clear(0);
+        self.clear(palette.black);
         self.draw_centered_text("Q B A S I C   G O R I L L A S", 32, 2, palette.text);
         self.draw_centered_text("STARRING:", 72, 1, palette.text);
         let starring = format!("{} AND {}", state.players[0].name, state.players[1].name);
@@ -171,8 +177,8 @@ impl Renderer {
         right.position.x = 360;
         right.position.y = 122;
         right.pose = ArmPose::RightUp;
-        self.draw_gorilla(&left, palette.object, 0);
-        self.draw_gorilla(&right, palette.object, 0);
+        self.draw_gorilla(&left, palette.object, palette.black);
+        self.draw_gorilla(&right, palette.object, palette.black);
 
         self.draw_centered_text("--------------", 232, 1, palette.text);
         self.draw_centered_text("V = View Intro", 256, 1, palette.text);
@@ -201,7 +207,7 @@ impl Renderer {
             self.draw_gorilla_explosion(explosion, victim, palette.explosion, palette.background);
         }
         if let Some(active_shot) = &state.active_shot {
-            self.draw_active_shot(active_shot, palette.window, palette.explosion);
+            self.draw_active_shot(active_shot, palette.banana, palette.explosion);
         }
         if let Some(explosion) = &state.shot_explosion {
             self.draw_shot_explosion(explosion, palette.explosion, palette.background);
@@ -210,12 +216,17 @@ impl Renderer {
         if let Some(shot_input) = shot_input {
             self.draw_shot_prompt(state, shot_input);
         }
-        self.draw_centered_text("Enter angle and velocity - Esc quits", 326, 2, 0xffff55);
+        self.draw_centered_text(
+            "Enter angle and velocity - Esc quits",
+            326,
+            2,
+            palette.prompt,
+        );
     }
 
     fn draw_game_over(&mut self, state: &GameState) {
         let palette = state.config.palette;
-        self.clear(0);
+        self.clear(palette.black);
         self.draw_centered_text("GAME OVER!", 96, 2, palette.text);
         self.draw_centered_text("Score:", 132, 1, palette.text);
 
@@ -224,7 +235,7 @@ impl Renderer {
         self.draw_text(&lines[1], 240, 168, 1, palette.text);
 
         let rounds = format!("Rounds played: {}", state.completed_rounds);
-        self.draw_centered_text(&rounds, 200, 1, 0xffff55);
+        self.draw_centered_text(&rounds, 200, 1, palette.prompt);
         self.draw_centered_text("Press any key to continue", 326, 1, palette.text);
     }
 
@@ -241,7 +252,7 @@ impl Renderer {
         self.draw_text(&right.name, right_x, 0, 1, palette.text);
 
         let score = format!("{} >Score< {}", left.score, right.score);
-        self.draw_centered_text(&score, 308, 1, 0xffff55);
+        self.draw_centered_text(&score, 308, 1, palette.prompt);
     }
 
     fn draw_shot_prompt(&mut self, state: &GameState, shot_input: &ShotInputState) {
@@ -435,7 +446,11 @@ impl Renderer {
                 color,
             );
         } else if frame < GorillaExplosion::TOTAL_FRAMES as i32 - 8 {
-            let ring_color = if frame % 2 == 0 { color } else { 0x55ff55 };
+            let ring_color = if frame % 2 == 0 {
+                color
+            } else {
+                crate::config::qbasic_screen9_color(10)
+            };
             self.draw_circle(center_x, center_y - 6, radius.min(24), ring_color);
             self.draw_circle(center_x, center_y - 6, (radius / 2).max(2), ring_color);
         } else {
