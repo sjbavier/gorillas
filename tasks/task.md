@@ -280,11 +280,11 @@ Player 2 transforms input angle with `angle = 180 - angle`.
 
 Tasks:
 
-- [ ] Implement angle/velocity prompt for current player.
-- [ ] Validate numeric input similarly to original `GetNum#`:
-  - [ ] Digits and one decimal point.
-  - [ ] Angle/velocity value capped around 360 by original input code.
-- [ ] Implement player 2 angle transformation.
+- [x] Implement angle/velocity prompt for current player.
+- [x] Validate numeric input similarly to original `GetNum#`:
+  - [x] Digits and one decimal point.
+  - [x] Angle/velocity value capped around 360 by original input code.
+- [x] Implement player 2 angle transformation.
 - [x] Implement banana spawn offset based on throwing player.
 - [x] Implement banana rotation frames.
 - [x] Implement projectile simulation using the original formula.
@@ -334,7 +334,7 @@ Original routines:
 Tasks:
 
 - [ ] Implement blocking text input for setup screens.
-- [ ] Implement per-turn angle and velocity input.
+- [x] Implement per-turn angle and velocity input.
 - [ ] Implement keypress-to-continue screens.
 - [ ] Implement menu key handling for `V` and `P`.
 - [ ] Consider escape/quit support.
@@ -411,7 +411,7 @@ Tasks:
 
 - [ ] Collect setup input.
 - [ ] Alternate turns.
-- [ ] Collect angle/velocity.
+- [x] Collect angle/velocity.
 - [x] Simulate/render banana trajectory.
 - [ ] Detect building collisions.
 
@@ -444,7 +444,7 @@ Tasks:
 - [x] `PlaceGorillas` -> `game::place_gorillas`.
 - [x] `DrawGorilla` -> `render::draw_gorilla` or sprite asset generation.
 - [x] `DoSun` -> `render::draw_sun` / `Sun` state.
-- [ ] `DoShot` -> turn input plus shot execution.
+- [x] `DoShot` -> turn input plus shot execution.
 - [x] `PlotShot` -> projectile simulation and collision.
 - [x] `DrawBan` -> `render::draw_banana`.
 - [ ] `DoExplosion` -> explosion animation.
@@ -460,8 +460,8 @@ Networking is **not** part of the first basic port, but early architecture shoul
 
 - [x] Define player actions as serializable command-like structs/enums when core gameplay begins.
 - [x] Keep projectile physics and scoring deterministic and independent from rendering.
-- [ ] Keep local input code separate from turn resolution.
-- [ ] Keep game-state updates possible from either local input or future network messages.
+- [x] Keep local input code separate from turn resolution.
+- [x] Keep game-state updates possible from either local input or future network messages.
 - [ ] Consider adding `serde` later for commands/state snapshots if/when networking starts.
 - [ ] Defer actual sockets/lobbies/matchmaking until after the local game is playable.
 

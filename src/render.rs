@@ -9,6 +9,7 @@ use crate::{
     config::Color,
     entities::{ArmPose, Gorilla, Sun, SunMood},
     game::{ActiveShot, GameState},
+    input::{ShotInputField, ShotInputState},
 };
 
 pub struct Renderer {
@@ -26,11 +27,11 @@ impl Renderer {
         }
     }
 
-    pub fn draw(&mut self, state: &GameState) {
-        self.draw_intro(state);
+    pub fn draw(&mut self, state: &GameState, shot_input: Option<&ShotInputState>) {
+        self.draw_intro(state, shot_input);
     }
 
-    pub fn draw_intro(&mut self, state: &GameState) {
+    pub fn draw_intro(&mut self, state: &GameState, shot_input: Option<&ShotInputState>) {
         let palette = state.config.palette;
         self.clear(palette.background);
         self.draw_sun(&state.sun, palette.sun, palette.background);
@@ -74,12 +75,42 @@ impl Renderer {
             2,
             palette.text,
         );
-        self.draw_centered_text(
-            "Press Space to throw a demo banana - Esc quits",
-            326,
-            2,
-            0xffff55,
+        if let Some(shot_input) = shot_input {
+            self.draw_shot_prompt(state, shot_input);
+        }
+        self.draw_centered_text("Enter angle and velocity - Esc quits", 326, 2, 0xffff55);
+    }
+
+    fn draw_shot_prompt(&mut self, state: &GameState, shot_input: &ShotInputState) {
+        let palette = state.config.palette;
+        let player = &state.players[shot_input.player_id];
+        let prompt = format!(
+            "{} angle: {}{}",
+            player.name,
+            shot_input.angle,
+            if shot_input.active_field == ShotInputField::Angle {
+                "_"
+            } else {
+                ""
+            }
         );
+        let velocity = format!(
+            "velocity: {}{}",
+            shot_input.velocity,
+            if shot_input.active_field == ShotInputField::Velocity {
+                "_"
+            } else {
+                ""
+            }
+        );
+        let x = if shot_input.player_id == 0 {
+            8
+        } else {
+            self.width.saturating_sub(230)
+        };
+        self.fill_rect(x, 8, 222, 28, palette.background);
+        self.draw_text(&prompt, x, 8, 1, palette.text);
+        self.draw_text(&velocity, x, 22, 1, palette.text);
     }
 
     fn draw_active_shot(

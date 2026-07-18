@@ -112,11 +112,6 @@ impl GameState {
         true
     }
 
-    /// Temporary local demo hook until setup/turn input exists.
-    pub fn start_demo_shot(&mut self) -> bool {
-        self.submit_shot(self.current_turn, 45.0, 80.0)
-    }
-
     pub fn update_animation(&mut self) {
         let Some(active_shot) = &mut self.active_shot else {
             return;
