@@ -362,10 +362,10 @@ Original uses QBasic `PLAY` strings for intro, throw, explosions, and victory da
 
 Tasks:
 
-- [ ] Decide whether audio is in scope for the first Rust version.
+- [x] Decide whether audio is in scope for the first Rust version.
 - [ ] If audio is in scope, choose an audio crate or backend feature.
 - [ ] Map original `PLAY` music/effects to simple tones or bundled sound effects.
-- [ ] If audio is out of scope, stub `audio.rs` so calls are no-ops.
+- [x] If audio is out of scope, stub `audio.rs` so calls are no-ops.
 
 ## Testing and verification
 
@@ -428,7 +428,7 @@ Tasks:
 
 ### Phase 5: Polish
 
-- [ ] Add audio or no-op audio stubs.
+- [x] Add audio or no-op audio stubs.
 - [ ] Tune colors, animation speed, and scaling.
 - [ ] Add tests.
 - [x] Document controls and build/run instructions.
@@ -474,5 +474,5 @@ Networking is **not** part of the first basic port, but early architecture shoul
 - [ ] Should this be a pixel-perfect-ish port or a gameplay-faithful remake? Current leaning: gameplay-faithful first, with QBasic-style visuals.
 - [x] Should the original CGA/EGA dual-mode scaling be preserved? Decision: target EGA 640x350 first; CGA scaling is deferred.
 - [ ] Should `NumGames` preserve original fixed-round behavior or become true play-to-N-points?
-- [ ] Is audio required for the first playable Rust version?
+- [x] Is audio required for the first playable Rust version? Decision: real audio output is out of scope for the first playable version; keep no-op `audio.rs` call sites for later mapping.
 - [x] Should collision use pixel buffer color sampling or explicit geometry/masks?

@@ -13,7 +13,7 @@ use crate::{
     audio::Audio,
     config::GameConfig,
     entities::PlayerCommand,
-    game::{GameState, ScreenState},
+    game::{AudioCue, GameState, ScreenState},
     input::{MenuChoice, SetupInputEvent, SetupInputState, ShotInputEvent, ShotInputState},
     render::Renderer,
 };
@@ -84,6 +84,7 @@ fn main() -> Result<(), minifb::Error> {
                     }
                 }
                 game.update_animation();
+                play_audio_cues(&audio, game.drain_audio_cues());
             }
             ScreenState::GameOver => {
                 if input::any_continue_key_pressed(&window) {
@@ -102,4 +103,15 @@ fn main() -> Result<(), minifb::Error> {
     }
 
     Ok(())
+}
+
+fn play_audio_cues(audio: &Audio, cues: Vec<AudioCue>) {
+    for cue in cues {
+        match cue {
+            AudioCue::Throw => audio.play_throw(),
+            AudioCue::Explosion => audio.play_explosion(),
+            AudioCue::GorillaExplosion => audio.play_gorilla_explosion(),
+            AudioCue::Victory => audio.play_victory(),
+        }
+    }
 }

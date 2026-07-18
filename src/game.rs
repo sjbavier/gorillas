@@ -18,6 +18,14 @@ pub enum ScreenState {
     GameOver,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum AudioCue {
+    Throw,
+    Explosion,
+    GorillaExplosion,
+    Victory,
+}
+
 #[derive(Clone, Debug)]
 pub struct ActiveShot {
     pub thrower_index: usize,
@@ -152,6 +160,7 @@ pub struct GameState {
     pub gorilla_explosion: Option<GorillaExplosion>,
     pub shot_explosion: Option<ShotExplosion>,
     pub last_shot: Option<ShotResolution>,
+    pending_audio_cues: Vec<AudioCue>,
 }
 
 impl GameState {
@@ -180,6 +189,7 @@ impl GameState {
             gorilla_explosion: None,
             shot_explosion: None,
             last_shot: None,
+            pending_audio_cues: Vec::new(),
         }
     }
 
@@ -188,6 +198,14 @@ impl GameState {
     /// This is the first bridge between pure projectile resolution and the local
     /// view. Later input/network code can call this with submitted shot commands
     /// instead of having rendering own turn rules.
+    pub fn drain_audio_cues(&mut self) -> Vec<AudioCue> {
+        self.pending_audio_cues.drain(..).collect()
+    }
+
+    fn queue_audio(&mut self, cue: AudioCue) {
+        self.pending_audio_cues.push(cue);
+    }
+
     pub fn submit_shot(&mut self, player_index: usize, angle_degrees: f32, velocity: f32) -> bool {
         if self.screen != ScreenState::Playing
             || player_index >= self.gorillas.len()
@@ -218,6 +236,7 @@ impl GameState {
         let samples = samples_through_resolution(params, &self.config, resolution);
 
         self.last_shot = Some(resolution);
+        self.queue_audio(AudioCue::Throw);
         self.active_shot = Some(ActiveShot {
             thrower_index: player_index,
             samples,
@@ -354,14 +373,17 @@ impl GameState {
 
     fn begin_gorilla_explosion(&mut self, victim_index: usize, scoring_player_index: usize) {
         self.gorillas[victim_index].pose = ArmPose::Down;
+        self.queue_audio(AudioCue::GorillaExplosion);
         self.gorilla_explosion = Some(GorillaExplosion::new(victim_index, scoring_player_index));
     }
 
     fn begin_shot_explosion(&mut self, position: crate::entities::Point) {
+        self.queue_audio(AudioCue::Explosion);
         self.shot_explosion = Some(ShotExplosion::new(position));
     }
 
     fn begin_victory_dance(&mut self, winner_index: usize) {
+        self.queue_audio(AudioCue::Victory);
         self.gorillas[winner_index].pose = ArmPose::LeftUp;
         self.gorillas[1 - winner_index].pose = ArmPose::Down;
         self.victory_dance = Some(VictoryDance::new(winner_index));
@@ -529,6 +551,7 @@ mod tests {
         let mut state = GameState::new_with_rng(config, &mut rng);
 
         assert!(state.submit_shot(0, 45.0, 1.0));
+        assert_eq!(state.drain_audio_cues(), vec![AudioCue::Throw]);
 
         let shot = state.active_shot.as_ref().expect("active shot");
         assert_eq!(shot.thrower_index, 0);
@@ -570,6 +593,7 @@ mod tests {
 
         assert!(state.active_shot.is_none());
         assert!(state.shot_explosion.is_some());
+        assert_eq!(state.drain_audio_cues(), vec![AudioCue::Explosion]);
         assert!(!state.accepts_shot_input());
         assert!(!state.submit_shot(1, 45.0, 10.0));
         assert_eq!(state.current_turn, 1);
@@ -649,6 +673,7 @@ mod tests {
         assert_eq!(state.players[1].score, 0);
         assert!(state.active_shot.is_none());
         assert!(state.gorilla_explosion.is_some());
+        assert_eq!(state.drain_audio_cues(), vec![AudioCue::GorillaExplosion]);
         assert!(state.victory_dance.is_none());
         assert_eq!(state.city, original_city);
 
@@ -660,6 +685,7 @@ mod tests {
         assert_eq!(state.players[1].score, 0);
         assert!(state.gorilla_explosion.is_none());
         assert!(state.victory_dance.is_some());
+        assert_eq!(state.drain_audio_cues(), vec![AudioCue::Victory]);
         assert_eq!(state.city, original_city);
 
         for _ in 0..VictoryDance::TOTAL_FRAMES {
@@ -772,6 +798,7 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(123);
         let mut state = GameState::new_with_rng(config, &mut rng);
         state.begin_gorilla_explosion(0, 1);
+        assert_eq!(state.drain_audio_cues(), vec![AudioCue::GorillaExplosion]);
 
         assert!(!state.accepts_shot_input());
         assert!(!state.submit_shot(0, 45.0, 10.0));
@@ -789,6 +816,7 @@ mod tests {
         let mut state = GameState::new_with_rng(config, &mut rng);
 
         state.begin_victory_dance(1);
+        assert_eq!(state.drain_audio_cues(), vec![AudioCue::Victory]);
         assert!(!state.accepts_shot_input());
         assert!(!state.submit_shot(1, 45.0, 10.0));
 
