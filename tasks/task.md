@@ -172,9 +172,9 @@ Tasks:
   - [x] Draw circle/arc.
   - [x] Fill circle/region as needed.
   - [ ] Set/get pixel or collision layer value.
-- [ ] Decide collision strategy:
+- [x] Decide collision strategy:
   - [ ] Pixel-color collision like QBasic `POINT`, or
-  - [ ] Geometry-based collision against buildings/gorillas/sun.
+  - [x] Geometry-based collision against buildings/gorillas/sun.
 - [ ] Implement text centering equivalent to `Center`.
 - [ ] Implement color palette mapping for background, gorillas, buildings, windows, sun, explosion, banana.
 - [ ] Implement screen scaling equivalent to `Scl(n)` if supporting multiple resolutions.
@@ -287,12 +287,12 @@ Tasks:
 - [x] Implement banana rotation frames.
 - [x] Implement projectile simulation using the original formula.
 - [x] Implement off-screen detection.
-- [ ] Implement collision with:
-  - [ ] Buildings/city.
-  - [ ] Gorillas.
-  - [ ] Sun.
-  - [ ] Bottom/screen edges.
-- [ ] Preserve original low-velocity behavior where velocity `< 2` can result in self-hit logic.
+- [x] Implement collision with:
+  - [x] Buildings/city.
+  - [x] Gorillas.
+  - [x] Sun.
+  - [x] Bottom/screen edges.
+- [x] Preserve original low-velocity behavior where velocity `< 2` can result in self-hit logic.
 - [ ] Trigger generic explosion for city/building hits.
 - [ ] Trigger gorilla explosion and score update for gorilla hits.
 

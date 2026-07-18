@@ -1,15 +1,16 @@
 //! Rendering-independent banana trajectory physics.
 //!
 //! The original QBasic `PlotShot` routine animates shots with a fixed `t += 0.1`
-//! loop and samples collision from pixels. This module keeps just the pure shot
-//! math so future turn resolution can use it without depending on rendering or
-//! local input.
+//! loop and samples collision from pixels. This module keeps pure shot math and
+//! geometry-based collision helpers so future turn resolution can use it without
+//! depending on rendering or local input.
 
 #![allow(dead_code)]
 
 use crate::{
+    city::City,
     config::GameConfig,
-    entities::{Gorilla, Point},
+    entities::{Gorilla, Point, ShotResult, Sun},
 };
 
 pub const TIME_STEP: f32 = 0.1;
@@ -49,6 +50,28 @@ pub struct TrajectoryPoint {
     pub position: Point,
     /// Banana rotation frame matching `(t * 10) MOD 4` from QBasic.
     pub rotation_frame: u8,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum CollisionKind {
+    Building(usize),
+    Gorilla(usize),
+    Sun,
+    BottomOrEdge,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ShotImpact {
+    pub sample: TrajectoryPoint,
+    pub kind: CollisionKind,
+    pub result: ShotResult,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ShotResolution {
+    pub result: ShotResult,
+    pub impact: Option<ShotImpact>,
+    pub sun_was_hit: bool,
 }
 
 /// Convert local player input into the world-space firing angle used by QBasic.
@@ -122,15 +145,151 @@ pub fn simulate_until_off_screen(params: ShotParams, config: &GameConfig) -> Vec
     samples
 }
 
+/// Resolve a shot against scene geometry.
+///
+/// QBasic samples pixels from the drawn banana and scene. This Rust port uses a
+/// documented geometry strategy for now: building rectangles, gorilla sprite
+/// bounds, sun radius, and the same screen-edge/bottom threshold as `PlotShot`.
+pub fn resolve_shot(
+    thrower_index: usize,
+    params: ShotParams,
+    config: &GameConfig,
+    city: &City,
+    gorillas: &[Gorilla; 2],
+    sun: &Sun,
+) -> ShotResolution {
+    if params.velocity < 2.0 {
+        return ShotResolution {
+            result: ShotResult::HitSelf,
+            impact: Some(ShotImpact {
+                sample: trajectory_at(params, 0.0),
+                kind: CollisionKind::Gorilla(thrower_index),
+                result: ShotResult::HitSelf,
+            }),
+            sun_was_hit: false,
+        };
+    }
+
+    let mut sun_was_hit = false;
+    let mut time = 0.0;
+
+    for _ in 0..10_000 {
+        let sample = trajectory_at(params, time);
+        let position = sample.position;
+
+        if is_off_screen(position, config) {
+            let impact = ShotImpact {
+                sample,
+                kind: CollisionKind::BottomOrEdge,
+                result: ShotResult::Miss,
+            };
+            return ShotResolution {
+                result: ShotResult::Miss,
+                impact: Some(impact),
+                sun_was_hit,
+            };
+        }
+
+        if position.y > 0.0 && sun.contains(position) {
+            sun_was_hit = true;
+        }
+
+        if let Some((player_index, result)) = gorilla_hit(thrower_index, position, gorillas) {
+            let impact = ShotImpact {
+                sample,
+                kind: CollisionKind::Gorilla(player_index),
+                result,
+            };
+            return ShotResolution {
+                result,
+                impact: Some(impact),
+                sun_was_hit,
+            };
+        }
+
+        if let Some(building_index) = building_hit(position, city) {
+            let impact = ShotImpact {
+                sample,
+                kind: CollisionKind::Building(building_index),
+                result: ShotResult::Miss,
+            };
+            return ShotResolution {
+                result: ShotResult::Miss,
+                impact: Some(impact),
+                sun_was_hit,
+            };
+        }
+
+        time += TIME_STEP;
+    }
+
+    ShotResolution {
+        result: ShotResult::Miss,
+        impact: None,
+        sun_was_hit,
+    }
+}
+
+fn gorilla_hit(
+    thrower_index: usize,
+    position: Point,
+    gorillas: &[Gorilla; 2],
+) -> Option<(usize, ShotResult)> {
+    gorillas
+        .iter()
+        .find(|gorilla| gorilla.position.contains(position))
+        .map(|gorilla| {
+            let result = if gorilla.player_index == thrower_index {
+                ShotResult::HitSelf
+            } else {
+                ShotResult::HitPlayer(gorilla.player_index)
+            };
+            (gorilla.player_index, result)
+        })
+}
+
+fn building_hit(position: Point, city: &City) -> Option<usize> {
+    city.buildings.iter().position(|building| {
+        position.x >= building.x as f32
+            && position.x <= (building.x + building.width) as f32
+            && position.y >= building.y as f32
+            && position.y <= city.bottom_line as f32
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{
+        city::{Building, City, SlopePattern},
+        config::rgb,
+    };
 
     fn assert_close(actual: f32, expected: f32) {
         assert!(
             (actual - expected).abs() < 0.001,
             "expected {actual} to be close to {expected}"
         );
+    }
+
+    fn test_city() -> City {
+        City {
+            buildings: vec![Building {
+                x: 100,
+                y: 300,
+                width: 60,
+                height: 35,
+                color: rgb(170, 0, 0),
+                windows: Vec::new(),
+            }],
+            wind: 0,
+            slope: SlopePattern::Upward,
+            bottom_line: 335,
+        }
+    }
+
+    fn test_gorillas() -> [Gorilla; 2] {
+        [Gorilla::new(0, 20, 280), Gorilla::new(1, 500, 280)]
     }
 
     #[test]
@@ -198,5 +357,81 @@ mod tests {
         assert!(samples
             .iter()
             .all(|sample| !is_off_screen(sample.position, &config)));
+    }
+
+    #[test]
+    fn low_velocity_resolves_as_self_hit() {
+        let config = GameConfig::default();
+        let gorillas = test_gorillas();
+        let params = ShotParams::new(banana_spawn(&gorillas[0]), 45.0, 1.0, 0, &config);
+
+        let resolution = resolve_shot(0, params, &config, &test_city(), &gorillas, &Sun::new(640));
+
+        assert_eq!(resolution.result, ShotResult::HitSelf);
+        assert_eq!(
+            resolution.impact.map(|impact| impact.kind),
+            Some(CollisionKind::Gorilla(0))
+        );
+    }
+
+    #[test]
+    fn shot_reports_building_collision() {
+        let config = GameConfig::default();
+        let gorillas = test_gorillas();
+        let params = ShotParams::new(Point::new(90.0, 310.0), 0.0, 30.0, 0, &config);
+
+        let resolution = resolve_shot(0, params, &config, &test_city(), &gorillas, &Sun::new(640));
+
+        assert_eq!(resolution.result, ShotResult::Miss);
+        assert_eq!(
+            resolution.impact.map(|impact| impact.kind),
+            Some(CollisionKind::Building(0))
+        );
+    }
+
+    #[test]
+    fn shot_reports_gorilla_collision() {
+        let config = GameConfig::default();
+        let gorillas = test_gorillas();
+        let params = ShotParams::new(Point::new(490.0, 290.0), 0.0, 30.0, 0, &config);
+
+        let resolution = resolve_shot(0, params, &config, &test_city(), &gorillas, &Sun::new(640));
+
+        assert_eq!(resolution.result, ShotResult::HitPlayer(1));
+        assert_eq!(
+            resolution.impact.map(|impact| impact.kind),
+            Some(CollisionKind::Gorilla(1))
+        );
+    }
+
+    #[test]
+    fn shot_records_sun_passage_without_stopping_trajectory() {
+        let config = GameConfig::default();
+        let gorillas = test_gorillas();
+        let sun = Sun::new(640);
+        let params = ShotParams::new(Point::new(320.0, 25.0), 90.0, 20.0, 0, &config);
+
+        let resolution = resolve_shot(0, params, &config, &test_city(), &gorillas, &sun);
+
+        assert!(resolution.sun_was_hit);
+        assert_ne!(
+            resolution.impact.map(|impact| impact.kind),
+            Some(CollisionKind::Sun)
+        );
+    }
+
+    #[test]
+    fn shot_reports_edge_or_bottom_miss() {
+        let config = GameConfig::default();
+        let gorillas = test_gorillas();
+        let params = ShotParams::new(Point::new(10.0, 50.0), 0.0, 300.0, 0, &config);
+
+        let resolution = resolve_shot(0, params, &config, &test_city(), &gorillas, &Sun::new(640));
+
+        assert_eq!(resolution.result, ShotResult::Miss);
+        assert_eq!(
+            resolution.impact.map(|impact| impact.kind),
+            Some(CollisionKind::BottomOrEdge)
+        );
     }
 }
