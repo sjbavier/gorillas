@@ -127,3 +127,49 @@ Update this file whenever implementation state changes, especially after:
 ### Next recommended task
 
 - Initialize the Cargo project and add `macroquad`, while keeping core game state/rules separate from rendering and local input.
+
+
+## Update: 2026-07-17 22:11 EDT
+
+### Selected task
+
+- Initialize the Rust project, add a windowed 2D backend and randomness dependency, create module skeletons/core structs, and show a basic intro screen.
+
+### Changes made
+
+- Created `Cargo.toml` and `Cargo.lock` for a new Rust binary crate named `gorillas`.
+- Initially attempted the preferred `macroquad` backend, but `macroquad 0.4.15` failed to compile on the available Cargo/Rust toolchain due dependency source errors around missing `size_of` imports.
+- Switched to a windowed 2D software-buffer backend using `minifb = 0.25.0` with `default-features = false` and `x11` only, avoiding newer transitive dependencies that require Cargo edition-2024 support.
+- Added `font8x8` for bitmap text rendering and `rand` for future city/wind randomness.
+- Added module skeletons:
+  - `src/main.rs` for entry point/window loop.
+  - `src/config.rs` for screen constants, QBasic-derived constants, palette, and `GameConfig`.
+  - `src/entities.rs` for `Point`, `ArmPose`, `SunMood`, `ShotResult`, `PlayerCommand`, and `Player`.
+  - `src/game.rs` for initial `GameState` and screen state.
+  - `src/render.rs` for a minifb-backed software renderer and centered intro text.
+  - `src/input.rs` for local quit input.
+  - `src/audio.rs` for no-op audio placeholder.
+- Implemented a fixed 640x350 window target matching original EGA mode.
+- Implemented a basic intro screen based on the QBasic `Intro` text. Esc quits.
+- Added `PlayerCommand::SubmitShot` early so future local and network inputs can feed explicit commands into core game logic.
+
+### Verification
+
+- Command: `cargo fmt`
+- Result: Passed
+- Notes: Formatting completed successfully.
+
+- Command: `cargo check`
+- Result: Passed
+- Notes: The final minifb/font8x8/rand skeleton checks successfully with no warnings. An earlier `macroquad` attempt failed to compile with the available toolchain and was superseded by the documented minifb backend choice.
+
+### Current status
+
+- Cargo project exists and builds.
+- Windowed 2D backend is selected as `minifb` instead of the earlier preferred `macroquad` because of toolchain compatibility.
+- Phase 1 skeleton is complete: modules/core structs exist and a basic intro window can be rendered.
+- Gameplay, setup input, skyline, gorillas, sun, physics, collisions, scoring, and audio effects remain unimplemented.
+
+### Next recommended task
+
+- Begin Phase 2 static scene work: define `Building`/window data structures, port deterministic-friendly city skyline generation, and render the skyline behind the intro/gameplay state.

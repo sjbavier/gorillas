@@ -64,13 +64,13 @@ Pick one target before implementing rendering:
 
 Tasks:
 
-- [ ] Create a Cargo project if one does not already exist.
+- [x] Create a Cargo project if one does not already exist.
 - [x] Decide rendering backend: use a windowed 2D backend; default to `macroquad` unless implementation discovers a better fit.
-- [ ] Add dependencies for rendering, input, randomness, and optional audio.
-- [ ] Define target resolution. Original supports:
+- [x] Add dependencies for rendering, input, randomness, and optional audio.
+- [x] Define target resolution. Original supports:
   - EGA mode: 640x350
   - CGA mode: 320x200
-- [ ] Prefer one modern fixed resolution first, likely 640x350 or scaled 1280x700.
+- [x] Prefer one modern fixed resolution first, likely 640x350 or scaled 1280x700.
 
 ## Port constants and basic data types
 
@@ -95,12 +95,12 @@ Original QBasic constants/globals to model in Rust:
 Tasks:
 
 - [ ] Replace QBasic global state with Rust structs.
-- [ ] Define `Point`/`Vec2` equivalents for `XYPoint`.
-- [ ] Define `GameConfig` for dimensions, gravity, palette/colors, timing.
+- [x] Define `Point`/`Vec2` equivalents for `XYPoint`.
+- [x] Define `GameConfig` for dimensions, gravity, palette/colors, timing.
 - [ ] Define enums:
-  - [ ] `ArmPose::{RightUp, LeftUp, Down}`
-  - [ ] `SunMood::{Happy, Shocked}`
-  - [ ] `ShotResult::{Miss, HitPlayer(usize), HitSelf}` or similar.
+  - [x] `ArmPose::{RightUp, LeftUp, Down}`
+  - [x] `SunMood::{Happy, Shocked}`
+  - [x] `ShotResult::{Miss, HitPlayer(usize), HitSelf}` or similar.
 - [ ] Avoid QBasic-style global mutable arrays except where backend requires buffers.
 
 ## Main flow to port
@@ -368,10 +368,10 @@ Tasks:
 
 ### Phase 1: Project skeleton
 
-- [ ] Initialize Cargo project.
-- [ ] Add chosen graphics/input dependencies.
-- [ ] Create modules and core structs.
-- [ ] Show a window/screen with the intro text.
+- [x] Initialize Cargo project.
+- [x] Add chosen graphics/input dependencies.
+- [x] Create modules and core structs.
+- [x] Show a window/screen with the intro text.
 
 ### Phase 2: Static scene
 
@@ -432,7 +432,7 @@ Tasks:
 
 Networking is **not** part of the first basic port, but early architecture should reduce future refactor cost.
 
-- [ ] Define player actions as serializable command-like structs/enums when core gameplay begins.
+- [x] Define player actions as serializable command-like structs/enums when core gameplay begins.
 - [ ] Keep projectile physics and scoring deterministic and independent from rendering.
 - [ ] Keep local input code separate from turn resolution.
 - [ ] Keep game-state updates possible from either local input or future network messages.

@@ -1,0 +1,9 @@
+[package]
+name = "gorillas"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+font8x8 = "0.3"
+minifb = { version = "=0.25.0", default-features = false, features = ["x11"] }
+rand = "0.8"
