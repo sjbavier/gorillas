@@ -450,7 +450,7 @@ Tasks:
 - [x] `DoShot` -> turn input plus shot execution.
 - [x] `PlotShot` -> projectile simulation and collision.
 - [x] `DrawBan` -> `render::draw_banana`.
-- [ ] `DoExplosion` -> explosion animation.
+- [x] `DoExplosion` -> explosion animation.
 - [x] `ExplodeGorilla` -> gorilla-specific explosion and hit result.
 - [x] `UpdateScores` -> score logic.
 - [x] `VictoryDance` -> winner animation.

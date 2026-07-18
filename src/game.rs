@@ -6,7 +6,7 @@ use crate::{
     city::City,
     config::GameConfig,
     entities::{ArmPose, Gorilla, Player, ShotResult, Sun, SunMood},
-    physics::{self, ShotParams, ShotResolution, TrajectoryPoint, TIME_STEP},
+    physics::{self, CollisionKind, ShotParams, ShotResolution, TrajectoryPoint, TIME_STEP},
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -34,6 +34,13 @@ pub struct VictoryDance {
 pub struct GorillaExplosion {
     pub victim_index: usize,
     pub scoring_player_index: usize,
+    frames_remaining: u8,
+    frame: u8,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ShotExplosion {
+    pub position: crate::entities::Point,
     frames_remaining: u8,
     frame: u8,
 }
@@ -89,6 +96,29 @@ impl GorillaExplosion {
     }
 }
 
+impl ShotExplosion {
+    pub const TOTAL_FRAMES: u8 = 18;
+    pub const MAX_RADIUS: i32 = 7;
+
+    fn new(position: crate::entities::Point) -> Self {
+        Self {
+            position,
+            frames_remaining: Self::TOTAL_FRAMES,
+            frame: 0,
+        }
+    }
+
+    pub fn frame(self) -> u8 {
+        self.frame
+    }
+
+    fn advance(&mut self) -> bool {
+        self.frame = self.frame.saturating_add(1);
+        self.frames_remaining = self.frames_remaining.saturating_sub(1);
+        self.frames_remaining == 0
+    }
+}
+
 impl ActiveShot {
     const IMPACT_HOLD_FRAMES: u8 = 20;
 
@@ -113,6 +143,7 @@ pub struct GameState {
     pub active_shot: Option<ActiveShot>,
     pub victory_dance: Option<VictoryDance>,
     pub gorilla_explosion: Option<GorillaExplosion>,
+    pub shot_explosion: Option<ShotExplosion>,
     pub last_shot: Option<ShotResolution>,
 }
 
@@ -137,6 +168,7 @@ impl GameState {
             active_shot: None,
             victory_dance: None,
             gorilla_explosion: None,
+            shot_explosion: None,
             last_shot: None,
         }
     }
@@ -189,6 +221,7 @@ impl GameState {
         self.active_shot.is_none()
             && self.victory_dance.is_none()
             && self.gorilla_explosion.is_none()
+            && self.shot_explosion.is_none()
     }
 
     pub fn update_animation(&mut self) {
@@ -209,6 +242,13 @@ impl GameState {
                 self.gorilla_explosion = None;
                 self.players[scoring_player_index].score += 1;
                 self.begin_victory_dance(scoring_player_index);
+            }
+            return;
+        }
+
+        if let Some(shot_explosion) = &mut self.shot_explosion {
+            if shot_explosion.advance() {
+                self.shot_explosion = None;
             }
             return;
         }
@@ -238,6 +278,8 @@ impl GameState {
                     gorilla_explosion_for_result(thrower_index, resolution.result)
                 {
                     self.begin_gorilla_explosion(victim_index, scoring_player_index);
+                } else if let Some(position) = shot_explosion_position(resolution) {
+                    self.begin_shot_explosion(position);
                 }
             }
         } else {
@@ -248,6 +290,10 @@ impl GameState {
     fn begin_gorilla_explosion(&mut self, victim_index: usize, scoring_player_index: usize) {
         self.gorillas[victim_index].pose = ArmPose::Down;
         self.gorilla_explosion = Some(GorillaExplosion::new(victim_index, scoring_player_index));
+    }
+
+    fn begin_shot_explosion(&mut self, position: crate::entities::Point) {
+        self.shot_explosion = Some(ShotExplosion::new(position));
     }
 
     fn begin_victory_dance(&mut self, winner_index: usize) {
@@ -273,6 +319,7 @@ pub fn scoring_player_for_result(thrower_index: usize, result: ShotResult) -> Op
         .map(|(_, scoring_player_index)| scoring_player_index)
 }
 
+#[allow(dead_code)]
 pub fn gorilla_explosion_for_result(
     thrower_index: usize,
     result: ShotResult,
@@ -281,6 +328,15 @@ pub fn gorilla_explosion_for_result(
         ShotResult::Miss => None,
         ShotResult::HitPlayer(victim_index) => Some((victim_index, thrower_index)),
         ShotResult::HitSelf => Some((thrower_index, 1 - thrower_index)),
+    }
+}
+
+pub fn shot_explosion_position(resolution: ShotResolution) -> Option<crate::entities::Point> {
+    let impact = resolution.impact?;
+    if resolution.result == ShotResult::Miss && matches!(impact.kind, CollisionKind::Building(_)) {
+        Some(impact.sample.position)
+    } else {
+        None
     }
 }
 
@@ -385,6 +441,72 @@ mod tests {
         assert_eq!(shot.thrower_index, 0);
         assert!(!shot.samples.is_empty());
         assert_eq!(state.last_shot, Some(shot.resolution));
+    }
+
+    #[test]
+    fn building_miss_triggers_generic_explosion_and_blocks_input() {
+        let config = GameConfig::default();
+        let mut rng = StdRng::seed_from_u64(123);
+        let mut state = GameState::new_with_rng(config, &mut rng);
+        let impact_position = crate::entities::Point::new(90.0, 310.0);
+        let sample = TrajectoryPoint {
+            time: 0.0,
+            position: impact_position,
+            rotation_frame: 0,
+        };
+        let resolution = ShotResolution {
+            result: ShotResult::Miss,
+            impact: Some(crate::physics::ShotImpact {
+                sample,
+                kind: CollisionKind::Building(0),
+                result: ShotResult::Miss,
+            }),
+            sun_was_hit: false,
+        };
+
+        assert_eq!(shot_explosion_position(resolution), Some(impact_position));
+        state.active_shot = Some(ActiveShot {
+            thrower_index: 0,
+            samples: vec![sample],
+            current_sample: 0,
+            resolution,
+            post_impact_frames: ActiveShot::IMPACT_HOLD_FRAMES - 1,
+        });
+
+        state.update_animation();
+
+        assert!(state.active_shot.is_none());
+        assert!(state.shot_explosion.is_some());
+        assert!(!state.accepts_shot_input());
+        assert!(!state.submit_shot(1, 45.0, 10.0));
+        assert_eq!(state.current_turn, 1);
+
+        for _ in 0..ShotExplosion::TOTAL_FRAMES {
+            state.update_animation();
+        }
+
+        assert!(state.shot_explosion.is_none());
+        assert!(state.accepts_shot_input());
+    }
+
+    #[test]
+    fn edge_miss_does_not_trigger_generic_explosion() {
+        let sample = TrajectoryPoint {
+            time: 0.0,
+            position: crate::entities::Point::new(3.0, 50.0),
+            rotation_frame: 0,
+        };
+        let resolution = ShotResolution {
+            result: ShotResult::Miss,
+            impact: Some(crate::physics::ShotImpact {
+                sample,
+                kind: CollisionKind::BottomOrEdge,
+                result: ShotResult::Miss,
+            }),
+            sun_was_hit: false,
+        };
+
+        assert_eq!(shot_explosion_position(resolution), None);
     }
 
     #[test]

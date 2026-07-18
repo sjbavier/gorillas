@@ -8,7 +8,7 @@ use crate::{
     city::City,
     config::Color,
     entities::{ArmPose, Gorilla, Sun, SunMood},
-    game::{ActiveShot, GameState, GorillaExplosion},
+    game::{ActiveShot, GameState, GorillaExplosion, ShotExplosion},
     input::{ShotInputField, ShotInputState},
 };
 
@@ -53,6 +53,9 @@ impl Renderer {
         }
         if let Some(active_shot) = &state.active_shot {
             self.draw_active_shot(active_shot, palette.window, palette.explosion);
+        }
+        if let Some(explosion) = &state.shot_explosion {
+            self.draw_shot_explosion(explosion, palette.explosion, palette.background);
         }
 
         self.draw_centered_text("Q B a s i c    G O R I L L A S", 44, 3, palette.text);
@@ -157,6 +160,29 @@ impl Renderer {
         if active_shot.is_at_last_sample() {
             self.draw_circle(x + 4, y + 4, 7, impact_color);
             self.draw_circle(x + 4, y + 4, 4, impact_color);
+        }
+    }
+
+    fn draw_shot_explosion(&mut self, explosion: &ShotExplosion, color: Color, background: Color) {
+        let x = explosion.position.x.round() as i32 + 4;
+        let y = explosion.position.y.round() as i32 + 4;
+        let frame = explosion.frame() as i32;
+        let radius = if frame <= ShotExplosion::MAX_RADIUS {
+            frame.max(1)
+        } else {
+            (ShotExplosion::TOTAL_FRAMES as i32 - frame).max(0)
+        };
+
+        // QBasic `DoExplosion` draws expanding colored rings, then erases them
+        // with the background. Keep this renderer-only while core state owns the
+        // deterministic timing and impact position.
+        let ring_color = if frame <= ShotExplosion::MAX_RADIUS {
+            color
+        } else {
+            background
+        };
+        for r in 1..=radius.max(1) {
+            self.draw_circle(x, y, r, ring_color);
         }
     }
 
