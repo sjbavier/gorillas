@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Last updated: 2026-07-17 23:32 EDT
+- Last updated: 2026-07-17 23:49 EDT
 - Working directory: `/home/b4v1n4t0r/rust_projects/gorillas`
-- Current commit: this commit (`Add no-op audio event hooks`).
+- Current commit: `4746873` (`Use elapsed time for animations`).
 - Source reference: `GORILLA.BAS`
 - Current backend: windowed 2D via `minifb` (`macroquad` was preferred initially but failed on the available toolchain/dependency set).
-- Latest verified commands: `cargo fmt`, `cargo test` (28 tests), and `cargo check` passed after no-op audio hook changes.
+- Latest verified commands: `cargo fmt`, `cargo test` (29 tests), and `cargo check` passed after elapsed-time animation pacing changes.
 
 ## Current implementation status
 
@@ -22,8 +22,9 @@
 - Local input is separate from rules: setup/menu/key-continue events and per-turn `SubmitShot` commands flow into game state.
 - Renderer draws intro/setup/menu screens, gameplay skyline/wind/sun/gorillas/header/prompts/banana/explosions/victory dance, and final game-over scores.
 - Rendering-independent banana trajectory helpers cover player-2 angle mirroring, EGA spawn offsets, QBasic projectile coordinates, rotation frames, off-screen detection, and geometry-based shot resolution.
+- Animation now uses elapsed frame time from `main` and a 0.02-second logical animation step, matching QBasic `Rest .02` shot pacing intent while avoiding busy waits; catch-up work is capped per rendered frame.
 - Audio output is intentionally out of scope for the first playable version. `audio.rs` exposes no-op intro/throw/explosion/gorilla-explosion/victory methods, and `GameState` queues rendering-independent `AudioCue`s for gameplay events.
-- Unit tests cover city bounds/window bounds, wind range, gorilla placement, trajectory formula, wind acceleration, spawn offsets, player-2 angle transform, off-screen stop behavior, shot collision outcomes, active shot creation, sun shock/reset, setup defaults/limits, setup flow state transitions, shot input validation/commands, score mapping, round/game-over flow, game-over continuation, explosions, victory dance, and audio cue queuing.
+- Unit tests cover city bounds/window bounds, wind range, gorilla placement, trajectory formula, wind acceleration, spawn offsets, player-2 angle transform, off-screen stop behavior, shot collision outcomes, active shot creation, sun shock/reset, setup defaults/limits, setup flow state transitions, shot input validation/commands, score mapping, round/game-over flow, game-over continuation, explosions, victory dance, audio cue queuing, and delta-time animation accumulation/catch-up capping.
 - `README.md` documents build/run commands, controls, local flow, scope notes, and a manual test checklist for the playable local flow.
 
 ## Active decisions and constraints
@@ -42,28 +43,29 @@
 
 ## Latest completed task
 
-- Selected task: add no-op audio call sites around intro/throw/explosion/victory events.
-- Changed files: `src/audio.rs`, `src/game.rs`, `src/main.rs`, `tasks/task.md`, `tasks/state.md`.
+- Selected task: replace frame-count-only animation progression with elapsed frame timing.
+- Changed files: `src/game.rs`, `src/main.rs`, `tasks/task.md`, `tasks/state.md`.
 - Summary:
-  - Expanded `audio.rs` with no-op methods for original intro, throw, generic explosion, gorilla explosion, and victory cues, preserving the QBasic `PLAY` strings as comments.
-  - Added `AudioCue` queuing/draining to `GameState` so gameplay events request sound without coupling rules to the audio backend.
-  - Drained cues in `main` and dispatched them to the current no-op `Audio` implementation.
-  - Added unit assertions for throw/explosion/victory cue queuing and marked no-op audio scope decisions complete in `tasks/task.md`.
+  - Added a 0.02-second logical animation step and delta-time accumulator in `GameState`.
+  - Changed the main loop to measure elapsed time with `Instant`, pass delta seconds into gameplay animation, and use minifb update-rate limiting instead of an unbounded CPU-burning loop.
+  - Capped per-frame catch-up steps to keep delayed frames from spiraling.
+  - Added a unit test for accumulation below the frame threshold and capped catch-up behavior.
+  - Marked the frame timing / busy-wait replacement task items complete in `tasks/task.md`.
 - Verification:
   - `cargo fmt` passed.
-  - `cargo test` passed: 28 tests.
+  - `cargo test` passed: 29 tests.
   - `cargo check` passed.
-- Commit: this commit (`Add no-op audio event hooks`).
+- Commit: `4746873` (`Use elapsed time for animations`).
 
 ## Known issues / deferred work
 
 - Tracked `target/` build artifacts exist from earlier repository history and become dirty after Cargo commands; avoid staging them for implementation commits.
 - Setup text input currently supports uppercase letters, digits, spaces, and decimal points; shifted punctuation/lowercase/numpad edge cases may need polish.
 - The menu's `V = View Intro` returns to the text intro rather than reproducing the full original gorilla musical intro animation.
-- Banana animation, explosions, and victory dance are frame-advanced rather than time-accumulated, so speed still needs tuning.
+- Animation uses QBasic-inspired logical pacing, but feel still needs manual tuning.
 - Building explosions are visual only; they do not yet remove/damage city geometry.
 - Audio output is still silent by design.
 
 ## Next recommended task
 
-- Tune animation timing/speed to use elapsed frame time more consistently instead of frame-count-only progression.
+- Add an explicit renderer/text helper cleanup pass: centralize text centering and basic drawing primitives so remaining renderer checklist items can be closed confidently.

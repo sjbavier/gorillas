@@ -351,10 +351,10 @@ QBasic calibrated delay loops are not appropriate in Rust.
 
 Tasks:
 
-- [ ] Replace busy-wait delay loops with frame timing or async/sleep depending on backend.
+- [x] Replace busy-wait delay loops with frame timing or async/sleep depending on backend.
 - [x] Define a fixed timestep or per-frame delta time for projectile animation.
 - [ ] Tune animation speed to feel close to original.
-- [ ] Avoid CPU-burning busy loops.
+- [x] Avoid CPU-burning busy loops.
 
 ## Audio
 
@@ -454,7 +454,7 @@ Tasks:
 - [x] `ExplodeGorilla` -> gorilla-specific explosion and hit result.
 - [x] `UpdateScores` -> score logic.
 - [x] `VictoryDance` -> winner animation.
-- [ ] `Rest` -> sleep/frame delay.
+- [x] `Rest` -> sleep/frame delay.
 - [ ] `Scl` -> scaling helper if needed.
 
 ## Future online/network play considerations

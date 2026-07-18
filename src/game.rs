@@ -26,6 +26,9 @@ pub enum AudioCue {
     Victory,
 }
 
+pub const ANIMATION_FRAME_SECONDS: f32 = 0.02;
+const MAX_ANIMATION_STEPS_PER_UPDATE: u8 = 8;
+
 #[derive(Clone, Debug)]
 pub struct ActiveShot {
     pub thrower_index: usize,
@@ -160,6 +163,7 @@ pub struct GameState {
     pub gorilla_explosion: Option<GorillaExplosion>,
     pub shot_explosion: Option<ShotExplosion>,
     pub last_shot: Option<ShotResolution>,
+    animation_accumulator_seconds: f32,
     pending_audio_cues: Vec<AudioCue>,
 }
 
@@ -189,6 +193,7 @@ impl GameState {
             gorilla_explosion: None,
             shot_explosion: None,
             last_shot: None,
+            animation_accumulator_seconds: 0.0,
             pending_audio_cues: Vec::new(),
         }
     }
@@ -215,6 +220,7 @@ impl GameState {
             return false;
         }
 
+        self.animation_accumulator_seconds = 0.0;
         self.sun.mood = SunMood::Happy;
         self.gorillas[player_index].pose = if player_index == 0 {
             ArmPose::RightUp
@@ -292,6 +298,7 @@ impl GameState {
         self.gorilla_explosion = None;
         self.shot_explosion = None;
         self.last_shot = None;
+        self.animation_accumulator_seconds = 0.0;
         self.start_next_round();
     }
 
@@ -303,11 +310,33 @@ impl GameState {
             && self.shot_explosion.is_none()
     }
 
+    #[allow(dead_code)]
     pub fn update_animation(&mut self) {
+        self.update_animation_with_delta(ANIMATION_FRAME_SECONDS);
+    }
+
+    pub fn update_animation_with_delta(&mut self, delta_seconds: f32) {
         if self.screen != ScreenState::Playing {
+            self.animation_accumulator_seconds = 0.0;
             return;
         }
 
+        self.animation_accumulator_seconds += delta_seconds.max(0.0);
+        let mut steps = 0;
+        while self.animation_accumulator_seconds >= ANIMATION_FRAME_SECONDS
+            && steps < MAX_ANIMATION_STEPS_PER_UPDATE
+        {
+            self.animation_accumulator_seconds -= ANIMATION_FRAME_SECONDS;
+            self.advance_animation_step();
+            steps += 1;
+            if self.screen != ScreenState::Playing || self.accepts_shot_input() {
+                self.animation_accumulator_seconds = 0.0;
+                break;
+            }
+        }
+    }
+
+    fn advance_animation_step(&mut self) {
         if let Some(victory_dance) = &mut self.victory_dance {
             let winner_index = victory_dance.winner_index;
             self.gorillas[winner_index].pose = victory_dance.pose();
@@ -399,6 +428,7 @@ impl GameState {
         self.city = City::generate(&self.config, &mut rng);
         self.gorillas = place_gorillas(&self.city, &mut rng);
         self.sun = Sun::new(self.config.screen_width);
+        self.animation_accumulator_seconds = 0.0;
         self.gorillas
             .iter_mut()
             .for_each(|gorilla| gorilla.pose = ArmPose::Down);
@@ -422,6 +452,7 @@ impl GameState {
         self.gorilla_explosion = None;
         self.shot_explosion = None;
         self.last_shot = None;
+        self.animation_accumulator_seconds = 0.0;
         self.completed_rounds = 0;
         self.setup_completed = false;
         self.screen = ScreenState::Setup;
@@ -827,6 +858,27 @@ mod tests {
             state.update_animation();
         }
         assert_eq!(state.gorillas[1].pose, ArmPose::RightUp);
+    }
+
+    #[test]
+    fn delta_animation_accumulates_time_and_caps_catch_up_steps() {
+        let config = GameConfig::default();
+        let mut rng = StdRng::seed_from_u64(123);
+        let mut state = GameState::new_with_rng(config, &mut rng);
+        assert!(state.submit_shot(0, 45.0, 10.0));
+        state.drain_audio_cues();
+
+        state.update_animation_with_delta(ANIMATION_FRAME_SECONDS / 2.0);
+        assert_eq!(state.active_shot.as_ref().unwrap().current_sample, 0);
+
+        state.update_animation_with_delta(ANIMATION_FRAME_SECONDS / 2.0);
+        assert_eq!(state.active_shot.as_ref().unwrap().current_sample, 1);
+
+        state.update_animation_with_delta(ANIMATION_FRAME_SECONDS * 20.0);
+        assert_eq!(
+            state.active_shot.as_ref().unwrap().current_sample,
+            1 + MAX_ANIMATION_STEPS_PER_UPDATE as usize
+        );
     }
 
     #[test]

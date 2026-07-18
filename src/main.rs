@@ -7,6 +7,8 @@ mod input;
 mod physics;
 mod render;
 
+use std::time::Instant;
+
 use minifb::{Scale, Window, WindowOptions};
 
 use crate::{
@@ -36,11 +38,17 @@ fn main() -> Result<(), minifb::Error> {
             ..WindowOptions::default()
         },
     )?;
+    window.limit_update_rate(Some(std::time::Duration::from_micros(16_600)));
     let mut renderer = Renderer::new(config.screen_width, config.screen_height);
     let mut setup_input = SetupInputState::new();
     let mut shot_input = ShotInputState::new(game.current_turn);
+    let mut last_frame = Instant::now();
 
     while !input::quit_requested(&window) {
+        let now = Instant::now();
+        let delta_seconds = now.duration_since(last_frame).as_secs_f32();
+        last_frame = now;
+
         match game.screen {
             ScreenState::Intro => {
                 if input::any_continue_key_pressed(&window) {
@@ -83,7 +91,7 @@ fn main() -> Result<(), minifb::Error> {
                         }
                     }
                 }
-                game.update_animation();
+                game.update_animation_with_delta(delta_seconds);
                 play_audio_cues(&audio, game.drain_audio_cues());
             }
             ScreenState::GameOver => {
