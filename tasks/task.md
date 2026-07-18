@@ -296,7 +296,8 @@ Tasks:
   - [x] Bottom/screen edges.
 - [x] Preserve original low-velocity behavior where velocity `< 2` can result in self-hit logic.
 - [ ] Trigger generic explosion for city/building hits.
-- [ ] Trigger gorilla explosion and score update for gorilla hits.
+- [ ] Trigger gorilla explosion for gorilla hits.
+- [x] Trigger score update for gorilla hits.
 
 ## Scoring and rounds
 
@@ -318,9 +319,9 @@ Tasks:
 
 - [ ] Decide whether to preserve fixed-round behavior or implement true play-to-N-points behavior; document decision.
 - [ ] Implement alternating turns.
-- [ ] Implement score updates.
-- [ ] Handle self-hit scoring; opponent should receive point.
-- [ ] Show current score during gameplay.
+- [x] Implement score updates.
+- [x] Handle self-hit scoring; opponent should receive point.
+- [x] Show current score during gameplay.
 - [ ] Show final score on game-over screen.
 
 ## Input handling
@@ -373,7 +374,7 @@ Tasks:
 - [ ] Add unit tests for pure logic:
   - [x] Trajectory coordinate calculations.
   - [x] Wind generation range/rules.
-  - [ ] Score updates including self-hit.
+  - [x] Score updates including self-hit.
   - [x] Player 2 angle transformation.
   - [x] Building generation does not exceed screen bounds.
 - [ ] Add deterministic random seed support for repeatable tests.
@@ -405,7 +406,7 @@ Tasks:
 - [x] Generate/render skyline.
 - [x] Place/render gorillas.
 - [x] Render sun.
-- [ ] Render score/header text.
+- [x] Render score/header text.
 
 ### Phase 3: Gameplay loop
 
@@ -449,7 +450,7 @@ Tasks:
 - [x] `DrawBan` -> `render::draw_banana`.
 - [ ] `DoExplosion` -> explosion animation.
 - [ ] `ExplodeGorilla` -> gorilla-specific explosion and hit result.
-- [ ] `UpdateScores` -> score logic.
+- [x] `UpdateScores` -> score logic.
 - [ ] `VictoryDance` -> winner animation.
 - [ ] `Rest` -> sleep/frame delay.
 - [ ] `Scl` -> scaling helper if needed.

@@ -35,6 +35,7 @@ impl Renderer {
         let palette = state.config.palette;
         self.clear(palette.background);
         self.draw_sun(&state.sun, palette.sun, palette.background);
+        self.draw_score_header(state);
         self.draw_city(&state.city, palette.background, palette.explosion);
         for gorilla in &state.gorillas {
             self.draw_gorilla(gorilla, palette.object, palette.background);
@@ -79,6 +80,22 @@ impl Renderer {
             self.draw_shot_prompt(state, shot_input);
         }
         self.draw_centered_text("Enter angle and velocity - Esc quits", 326, 2, 0xffff55);
+    }
+
+    fn draw_score_header(&mut self, state: &GameState) {
+        let palette = state.config.palette;
+        let left = &state.players[0];
+        let right = &state.players[1];
+        self.fill_rect(0, 0, self.width, 8, palette.background);
+        self.draw_text(&left.name, 2, 0, 1, palette.text);
+
+        let right_x = self
+            .width
+            .saturating_sub(right.name.chars().count() * 8 + 2);
+        self.draw_text(&right.name, right_x, 0, 1, palette.text);
+
+        let score = format!("{} >Score< {}", left.score, right.score);
+        self.draw_centered_text(&score, 308, 1, 0xffff55);
     }
 
     fn draw_shot_prompt(&mut self, state: &GameState, shot_input: &ShotInputState) {

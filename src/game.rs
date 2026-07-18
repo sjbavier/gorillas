@@ -5,7 +5,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use crate::{
     city::City,
     config::GameConfig,
-    entities::{ArmPose, Gorilla, Player, Sun, SunMood},
+    entities::{ArmPose, Gorilla, Player, ShotResult, Sun, SunMood},
     physics::{self, ShotParams, ShotResolution, TrajectoryPoint, TIME_STEP},
 };
 
@@ -77,7 +77,10 @@ impl GameState {
     /// view. Later input/network code can call this with submitted shot commands
     /// instead of having rendering own turn rules.
     pub fn submit_shot(&mut self, player_index: usize, angle_degrees: f32, velocity: f32) -> bool {
-        if player_index >= self.gorillas.len() || self.active_shot.is_some() {
+        if player_index >= self.gorillas.len()
+            || player_index != self.current_turn
+            || self.active_shot.is_some()
+        {
             return false;
         }
 
@@ -128,13 +131,43 @@ impl GameState {
         if active_shot.is_at_last_sample() {
             active_shot.post_impact_frames += 1;
             if active_shot.post_impact_frames >= ActiveShot::IMPACT_HOLD_FRAMES {
+                let thrower_index = active_shot.thrower_index;
+                let resolution = active_shot.resolution;
                 self.sun.mood = SunMood::Happy;
                 self.current_turn = 1 - self.current_turn;
                 self.active_shot = None;
+
+                if self.apply_scoring_result(thrower_index, resolution.result) {
+                    self.start_next_round();
+                }
             }
         } else {
             active_shot.current_sample += 1;
         }
+    }
+
+    fn apply_scoring_result(&mut self, thrower_index: usize, result: ShotResult) -> bool {
+        let Some(scoring_player) = scoring_player_for_result(thrower_index, result) else {
+            return false;
+        };
+
+        self.players[scoring_player].score += 1;
+        true
+    }
+
+    fn start_next_round(&mut self) {
+        let mut rng = StdRng::from_entropy();
+        self.city = City::generate(&self.config, &mut rng);
+        self.gorillas = place_gorillas(&self.city, &mut rng);
+        self.sun = Sun::new(self.config.screen_width);
+    }
+}
+
+pub fn scoring_player_for_result(thrower_index: usize, result: ShotResult) -> Option<usize> {
+    match result {
+        ShotResult::Miss => None,
+        ShotResult::HitPlayer(_) => Some(thrower_index),
+        ShotResult::HitSelf => Some(1 - thrower_index),
     }
 }
 
@@ -239,6 +272,55 @@ mod tests {
         assert_eq!(shot.thrower_index, 0);
         assert!(!shot.samples.is_empty());
         assert_eq!(state.last_shot, Some(shot.resolution));
+    }
+
+    #[test]
+    fn score_mapping_matches_qbasic_update_scores() {
+        assert_eq!(scoring_player_for_result(0, ShotResult::Miss), None);
+        assert_eq!(
+            scoring_player_for_result(0, ShotResult::HitPlayer(1)),
+            Some(0)
+        );
+        assert_eq!(
+            scoring_player_for_result(1, ShotResult::HitPlayer(0)),
+            Some(1)
+        );
+        assert_eq!(scoring_player_for_result(0, ShotResult::HitSelf), Some(1));
+        assert_eq!(scoring_player_for_result(1, ShotResult::HitSelf), Some(0));
+    }
+
+    #[test]
+    fn scored_shot_updates_score_and_starts_fresh_round() {
+        let config = GameConfig::default();
+        let mut rng = StdRng::seed_from_u64(123);
+        let mut state = GameState::new_with_rng(config, &mut rng);
+        let original_city = state.city.clone();
+        let params = ShotParams::new(
+            crate::entities::Point::new(500.0, 290.0),
+            0.0,
+            30.0,
+            0,
+            &config,
+        );
+        let resolution =
+            physics::resolve_shot(0, params, &config, &state.city, &state.gorillas, &state.sun);
+        state.active_shot = Some(ActiveShot {
+            thrower_index: 0,
+            samples: vec![physics::trajectory_at(params, 0.0)],
+            current_sample: 0,
+            resolution: ShotResolution {
+                result: ShotResult::HitPlayer(1),
+                ..resolution
+            },
+            post_impact_frames: ActiveShot::IMPACT_HOLD_FRAMES - 1,
+        });
+
+        state.update_animation();
+
+        assert_eq!(state.players[0].score, 1);
+        assert_eq!(state.players[1].score, 0);
+        assert!(state.active_shot.is_none());
+        assert_ne!(state.city, original_city);
     }
 
     #[test]
