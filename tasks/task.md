@@ -378,7 +378,7 @@ Tasks:
   - [x] Player 2 angle transformation.
   - [x] Building generation does not exceed screen bounds.
 - [ ] Add deterministic random seed support for repeatable tests.
-- [ ] Add manual test checklist:
+- [x] Add manual test checklist:
   - [ ] Intro appears.
   - [ ] Player setup works with defaults.
   - [ ] Skyline appears and varies between rounds.
@@ -431,7 +431,7 @@ Tasks:
 - [ ] Add audio or no-op audio stubs.
 - [ ] Tune colors, animation speed, and scaling.
 - [ ] Add tests.
-- [ ] Document controls and build/run instructions.
+- [x] Document controls and build/run instructions.
 
 ## QBasic routine mapping checklist
 
