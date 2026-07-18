@@ -165,17 +165,17 @@ QBasic drawing calls to replace:
 Tasks:
 
 - [ ] Create a renderer interface with primitives:
-  - [ ] Clear screen/background.
-  - [ ] Draw text at row/column or pixel coordinates.
-  - [ ] Draw line.
-  - [ ] Draw rectangle outline/fill.
+  - [x] Clear screen/background.
+  - [x] Draw text at row/column or pixel coordinates.
+  - [x] Draw line.
+  - [x] Draw rectangle outline/fill.
   - [x] Draw circle/arc.
   - [x] Fill circle/region as needed.
-  - [ ] Set/get pixel or collision layer value.
+  - [x] Set/get pixel or collision layer value.
 - [x] Decide collision strategy:
   - [ ] Pixel-color collision like QBasic `POINT`, or
   - [x] Geometry-based collision against buildings/gorillas/sun.
-- [ ] Implement text centering equivalent to `Center`.
+- [x] Implement text centering equivalent to `Center`.
 - [ ] Implement color palette mapping for background, gorillas, buildings, windows, sun, explosion, banana.
 - [ ] Implement screen scaling equivalent to `Scl(n)` if supporting multiple resolutions.
 
@@ -430,7 +430,7 @@ Tasks:
 
 - [x] Add audio or no-op audio stubs.
 - [ ] Tune colors, animation speed, and scaling.
-- [ ] Add tests.
+- [x] Add tests.
 - [x] Document controls and build/run instructions.
 
 ## QBasic routine mapping checklist

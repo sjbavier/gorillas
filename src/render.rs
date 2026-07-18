@@ -12,6 +12,10 @@ use crate::{
     input::{SetupField, SetupInputState, ShotInputField, ShotInputState},
 };
 
+const FONT_WIDTH: usize = 8;
+const FONT_HEIGHT: usize = 8;
+const TEXT_ROW_HEIGHT: usize = 14;
+
 pub struct Renderer {
     width: usize,
     height: usize,
@@ -487,22 +491,38 @@ impl Renderer {
     }
 
     fn draw_centered_text(&mut self, text: &str, y: usize, scale: usize, color: Color) {
-        let width = text.chars().count() * 8 * scale;
-        let x = self.width.saturating_sub(width) / 2;
+        let x = self.centered_text_x(text, scale);
         self.draw_text(text, x, y, scale, color);
+    }
+
+    #[allow(dead_code)]
+    fn draw_centered_text_row(&mut self, row: usize, text: &str, scale: usize, color: Color) {
+        self.draw_centered_text(text, Self::text_row_y(row), scale, color);
+    }
+
+    fn centered_text_x(&self, text: &str, scale: usize) -> usize {
+        self.width.saturating_sub(Self::text_width(text, scale)) / 2
+    }
+
+    fn text_width(text: &str, scale: usize) -> usize {
+        text.chars().count() * FONT_WIDTH * scale
+    }
+
+    fn text_row_y(row: usize) -> usize {
+        row.saturating_sub(1) * TEXT_ROW_HEIGHT
     }
 
     fn draw_text(&mut self, text: &str, mut x: usize, y: usize, scale: usize, color: Color) {
         for ch in text.chars() {
             self.draw_char(ch, x, y, scale, color);
-            x += 8 * scale;
+            x += FONT_WIDTH * scale;
         }
     }
 
     fn draw_char(&mut self, ch: char, x: usize, y: usize, scale: usize, color: Color) {
         if let Some(glyph) = BASIC_FONTS.get(ch) {
-            for (row, bits) in glyph.iter().enumerate() {
-                for col in 0..8 {
+            for (row, bits) in glyph.iter().take(FONT_HEIGHT).enumerate() {
+                for col in 0..FONT_WIDTH {
                     if bits & (1 << col) != 0 {
                         self.fill_rect(x + col * scale, y + row * scale, scale, scale, color);
                     }
@@ -511,7 +531,19 @@ impl Renderer {
         }
     }
 
+    #[allow(dead_code)]
+    fn get_pixel(&self, x: i32, y: i32) -> Option<Color> {
+        if x >= 0 && y >= 0 && x < self.width as i32 && y < self.height as i32 {
+            Some(self.buffer[y as usize * self.width + x as usize])
+        } else {
+            None
+        }
+    }
+
     fn draw_rect_outline(&mut self, x: i32, y: i32, width: i32, height: i32, color: Color) {
+        if width <= 0 || height <= 0 {
+            return;
+        }
         self.draw_line(x, y, x + width - 1, y, color);
         self.draw_line(x, y + height - 1, x + width - 1, y + height - 1, color);
         self.draw_line(x, y, x, y + height - 1, color);
@@ -630,5 +662,47 @@ impl Renderer {
         if x >= 0 && y >= 0 && x < self.width as i32 && y < self.height as i32 {
             self.buffer[y as usize * self.width + x as usize] = color;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn centered_text_x_matches_qbasic_centering_intent() {
+        let renderer = Renderer::new(640, 350);
+        assert_eq!(renderer.centered_text_x("1234567890", 1), 280);
+        assert_eq!(renderer.centered_text_x("AB", 2), 304);
+    }
+
+    #[test]
+    fn row_text_helper_maps_one_based_rows_to_pixels() {
+        assert_eq!(Renderer::text_row_y(1), 0);
+        assert_eq!(Renderer::text_row_y(24), 322);
+        assert_eq!(Renderer::text_row_y(0), 0);
+    }
+
+    #[test]
+    fn primitive_pixel_access_handles_bounds() {
+        let mut renderer = Renderer::new(16, 16);
+        renderer.clear(0x010203);
+        renderer.set_pixel(4, 5, 0xabcdef);
+        renderer.set_pixel(-1, 5, 0xffffff);
+        renderer.set_pixel(16, 5, 0xffffff);
+
+        assert_eq!(renderer.get_pixel(4, 5), Some(0xabcdef));
+        assert_eq!(renderer.get_pixel(0, 0), Some(0x010203));
+        assert_eq!(renderer.get_pixel(-1, 0), None);
+        assert_eq!(renderer.get_pixel(16, 0), None);
+    }
+
+    #[test]
+    fn rectangle_outline_ignores_empty_dimensions() {
+        let mut renderer = Renderer::new(8, 8);
+        renderer.clear(0);
+        renderer.draw_rect_outline(1, 1, 0, 4, 0xffffff);
+        renderer.draw_rect_outline(1, 1, 4, -1, 0xffffff);
+        assert!(renderer.buffer.iter().all(|&pixel| pixel == 0));
     }
 }

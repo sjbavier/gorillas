@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Last updated: 2026-07-17 23:49 EDT
+- Last updated: 2026-07-18 14:43 EDT
 - Working directory: `/home/b4v1n4t0r/rust_projects/gorillas`
-- Current commit: `4746873` (`Use elapsed time for animations`).
+- Current commit: `4e910fc` (`Clean up renderer helper primitives`).
 - Source reference: `GORILLA.BAS`
 - Current backend: windowed 2D via `minifb` (`macroquad` was preferred initially but failed on the available toolchain/dependency set).
-- Latest verified commands: `cargo fmt`, `cargo test` (29 tests), and `cargo check` passed after elapsed-time animation pacing changes.
+- Latest verified commands: `cargo fmt`, `cargo test` (33 tests), and `cargo check` passed after renderer text/primitive helper cleanup.
 
 ## Current implementation status
 
@@ -21,10 +21,11 @@
 - Game state generates a city, places gorillas, creates a sun, tracks current turn, scores, completed rounds, a fixed `round_limit`, active shot animation, generic building-hit shot explosions, gorilla hit explosions, victory dance, and `ScreenState::{Intro, Setup, Menu, Playing, GameOver}`.
 - Local input is separate from rules: setup/menu/key-continue events and per-turn `SubmitShot` commands flow into game state.
 - Renderer draws intro/setup/menu screens, gameplay skyline/wind/sun/gorillas/header/prompts/banana/explosions/victory dance, and final game-over scores.
+- Renderer primitive helpers now cover clear, pixel text, QBasic-style centered text support, line drawing, rectangle outline/fill, circles/arcs, and set/get pixel access; helper behavior has unit-test coverage.
 - Rendering-independent banana trajectory helpers cover player-2 angle mirroring, EGA spawn offsets, QBasic projectile coordinates, rotation frames, off-screen detection, and geometry-based shot resolution.
-- Animation now uses elapsed frame time from `main` and a 0.02-second logical animation step, matching QBasic `Rest .02` shot pacing intent while avoiding busy waits; catch-up work is capped per rendered frame.
+- Animation uses elapsed frame time from `main` and a 0.02-second logical animation step, matching QBasic `Rest .02` shot pacing intent while avoiding busy waits; catch-up work is capped per rendered frame.
 - Audio output is intentionally out of scope for the first playable version. `audio.rs` exposes no-op intro/throw/explosion/gorilla-explosion/victory methods, and `GameState` queues rendering-independent `AudioCue`s for gameplay events.
-- Unit tests cover city bounds/window bounds, wind range, gorilla placement, trajectory formula, wind acceleration, spawn offsets, player-2 angle transform, off-screen stop behavior, shot collision outcomes, active shot creation, sun shock/reset, setup defaults/limits, setup flow state transitions, shot input validation/commands, score mapping, round/game-over flow, game-over continuation, explosions, victory dance, audio cue queuing, and delta-time animation accumulation/catch-up capping.
+- Unit tests cover city bounds/window bounds, wind range, gorilla placement, trajectory formula, wind acceleration, spawn offsets, player-2 angle transform, off-screen stop behavior, shot collision outcomes, active shot creation, sun shock/reset, setup defaults/limits, setup flow state transitions, shot input validation/commands, score mapping, round/game-over flow, game-over continuation, explosions, victory dance, audio cue queuing, delta-time animation accumulation/catch-up capping, and renderer helper primitives.
 - `README.md` documents build/run commands, controls, local flow, scope notes, and a manual test checklist for the playable local flow.
 
 ## Active decisions and constraints
@@ -43,19 +44,18 @@
 
 ## Latest completed task
 
-- Selected task: replace frame-count-only animation progression with elapsed frame timing.
-- Changed files: `src/game.rs`, `src/main.rs`, `tasks/task.md`, `tasks/state.md`.
+- Selected task: centralize renderer text centering and basic drawing primitive helpers so the renderer checklist can be closed confidently.
+- Changed files: `src/render.rs`, `tasks/task.md`, `tasks/state.md`.
 - Summary:
-  - Added a 0.02-second logical animation step and delta-time accumulator in `GameState`.
-  - Changed the main loop to measure elapsed time with `Instant`, pass delta seconds into gameplay animation, and use minifb update-rate limiting instead of an unbounded CPU-burning loop.
-  - Capped per-frame catch-up steps to keep delayed frames from spiraling.
-  - Added a unit test for accumulation below the frame threshold and capped catch-up behavior.
-  - Marked the frame timing / busy-wait replacement task items complete in `tasks/task.md`.
+  - Added shared font-size/text-row constants plus helper methods for centered text X calculation, QBasic-style one-based text row mapping, text width, and pixel access.
+  - Hardened rectangle-outline drawing against empty dimensions and made glyph drawing use shared font dimensions.
+  - Added renderer unit tests for text centering, row mapping, pixel bounds, and empty rectangle behavior.
+  - Marked implemented renderer primitive/text-centering checklist items and the Phase 5 tests item complete in `tasks/task.md`.
 - Verification:
   - `cargo fmt` passed.
-  - `cargo test` passed: 29 tests.
+  - `cargo test` passed: 33 tests.
   - `cargo check` passed.
-- Commit: `4746873` (`Use elapsed time for animations`).
+- Commit: `4e910fc` (`Clean up renderer helper primitives`).
 
 ## Known issues / deferred work
 
@@ -68,4 +68,4 @@
 
 ## Next recommended task
 
-- Add an explicit renderer/text helper cleanup pass: centralize text centering and basic drawing primitives so remaining renderer checklist items can be closed confidently.
+- Add escape/quit support polish for setup/menu/gameplay input, then update manual verification notes.
