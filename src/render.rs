@@ -8,7 +8,7 @@ use crate::{
     city::City,
     config::Color,
     entities::{ArmPose, Gorilla, Sun, SunMood},
-    game::{ActiveShot, GameState},
+    game::{ActiveShot, GameState, GorillaExplosion},
     input::{ShotInputField, ShotInputState},
 };
 
@@ -38,7 +38,18 @@ impl Renderer {
         self.draw_score_header(state);
         self.draw_city(&state.city, palette.background, palette.explosion);
         for gorilla in &state.gorillas {
+            if state
+                .gorilla_explosion
+                .as_ref()
+                .is_some_and(|explosion| explosion.victim_index == gorilla.player_index)
+            {
+                continue;
+            }
             self.draw_gorilla(gorilla, palette.object, palette.background);
+        }
+        if let Some(explosion) = &state.gorilla_explosion {
+            let victim = &state.gorillas[explosion.victim_index];
+            self.draw_gorilla_explosion(explosion, victim, palette.explosion, palette.background);
         }
         if let Some(active_shot) = &state.active_shot {
             self.draw_active_shot(active_shot, palette.window, palette.explosion);
@@ -233,6 +244,45 @@ impl Renderer {
         self.draw_thick_arc(x - 6, y + 25, 10, 337.5, 405.0, color, 5);
         self.draw_arc(x - 5, y + 10, 5, 270.0, 360.0, feature_color);
         self.draw_arc(x + 5, y + 10, 5, 180.0, 270.0, feature_color);
+    }
+
+    fn draw_gorilla_explosion(
+        &mut self,
+        explosion: &GorillaExplosion,
+        gorilla: &Gorilla,
+        color: Color,
+        background: Color,
+    ) {
+        let (anchor_x, anchor_y) = gorilla.draw_anchor();
+        let frame = explosion.frame() as i32;
+        let grow_frames = GorillaExplosion::GROW_FRAMES as i32;
+        let radius = if frame <= grow_frames {
+            2 + frame
+        } else {
+            2 + grow_frames + (frame - grow_frames) / 2
+        };
+        let center_x = anchor_x + 8;
+        let center_y = anchor_y + 12;
+
+        // QBasic's ExplodeGorilla expands a half-circle around the hit gorilla,
+        // then alternates colored rings before clearing them. Approximate that
+        // with deterministic, renderer-only rings while core state owns timing.
+        if frame < grow_frames {
+            self.draw_arc(center_x, center_y, radius, 180.0, 360.0, color);
+            self.draw_line(
+                center_x - radius,
+                center_y - frame / 2,
+                center_x + radius,
+                center_y - frame / 2,
+                color,
+            );
+        } else if frame < GorillaExplosion::TOTAL_FRAMES as i32 - 8 {
+            let ring_color = if frame % 2 == 0 { color } else { 0x55ff55 };
+            self.draw_circle(center_x, center_y - 6, radius.min(24), ring_color);
+            self.draw_circle(center_x, center_y - 6, (radius / 2).max(2), ring_color);
+        } else {
+            self.draw_circle(center_x, center_y - 6, radius.min(24), background);
+        }
     }
 
     fn draw_city(&mut self, city: &City, background: Color, wind_color: Color) {

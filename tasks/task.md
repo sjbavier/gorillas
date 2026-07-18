@@ -296,7 +296,7 @@ Tasks:
   - [x] Bottom/screen edges.
 - [x] Preserve original low-velocity behavior where velocity `< 2` can result in self-hit logic.
 - [ ] Trigger generic explosion for city/building hits.
-- [ ] Trigger gorilla explosion for gorilla hits.
+- [x] Trigger gorilla explosion for gorilla hits.
 - [x] Trigger score update for gorilla hits.
 
 ## Scoring and rounds
@@ -421,6 +421,8 @@ Tasks:
 - [x] Detect gorilla collisions.
 - [x] Detect sun interactions.
 - [ ] Add explosions.
+  - [x] Add gorilla-specific explosion before victory dance.
+  - [ ] Add generic city/building explosion.
 - [x] Add victory dance.
 - [ ] Add scoring and game-over flow.
 
@@ -449,9 +451,9 @@ Tasks:
 - [x] `PlotShot` -> projectile simulation and collision.
 - [x] `DrawBan` -> `render::draw_banana`.
 - [ ] `DoExplosion` -> explosion animation.
-- [ ] `ExplodeGorilla` -> gorilla-specific explosion and hit result.
+- [x] `ExplodeGorilla` -> gorilla-specific explosion and hit result.
 - [x] `UpdateScores` -> score logic.
-- [ ] `VictoryDance` -> winner animation.
+- [x] `VictoryDance` -> winner animation.
 - [ ] `Rest` -> sleep/frame delay.
 - [ ] `Scl` -> scaling helper if needed.
 

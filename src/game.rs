@@ -30,6 +30,14 @@ pub struct VictoryDance {
     frame: u8,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct GorillaExplosion {
+    pub victim_index: usize,
+    pub scoring_player_index: usize,
+    frames_remaining: u8,
+    frame: u8,
+}
+
 impl VictoryDance {
     const TOTAL_FRAMES: u8 = 48;
     const POSE_TOGGLE_FRAMES: u8 = 8;
@@ -48,6 +56,30 @@ impl VictoryDance {
         } else {
             ArmPose::RightUp
         }
+    }
+
+    fn advance(&mut self) -> bool {
+        self.frame = self.frame.saturating_add(1);
+        self.frames_remaining = self.frames_remaining.saturating_sub(1);
+        self.frames_remaining == 0
+    }
+}
+
+impl GorillaExplosion {
+    pub const TOTAL_FRAMES: u8 = 36;
+    pub const GROW_FRAMES: u8 = 12;
+
+    fn new(victim_index: usize, scoring_player_index: usize) -> Self {
+        Self {
+            victim_index,
+            scoring_player_index,
+            frames_remaining: Self::TOTAL_FRAMES,
+            frame: 0,
+        }
+    }
+
+    pub fn frame(self) -> u8 {
+        self.frame
     }
 
     fn advance(&mut self) -> bool {
@@ -80,6 +112,7 @@ pub struct GameState {
     pub current_turn: usize,
     pub active_shot: Option<ActiveShot>,
     pub victory_dance: Option<VictoryDance>,
+    pub gorilla_explosion: Option<GorillaExplosion>,
     pub last_shot: Option<ShotResolution>,
 }
 
@@ -103,6 +136,7 @@ impl GameState {
             current_turn: 0,
             active_shot: None,
             victory_dance: None,
+            gorilla_explosion: None,
             last_shot: None,
         }
     }
@@ -152,7 +186,9 @@ impl GameState {
     }
 
     pub fn accepts_shot_input(&self) -> bool {
-        self.active_shot.is_none() && self.victory_dance.is_none()
+        self.active_shot.is_none()
+            && self.victory_dance.is_none()
+            && self.gorilla_explosion.is_none()
     }
 
     pub fn update_animation(&mut self) {
@@ -162,6 +198,17 @@ impl GameState {
             if victory_dance.advance() {
                 self.victory_dance = None;
                 self.start_next_round();
+            }
+            return;
+        }
+
+        if let Some(gorilla_explosion) = &mut self.gorilla_explosion {
+            let scoring_player_index = gorilla_explosion.scoring_player_index;
+            self.gorillas[gorilla_explosion.victim_index].pose = ArmPose::Down;
+            if gorilla_explosion.advance() {
+                self.gorilla_explosion = None;
+                self.players[scoring_player_index].score += 1;
+                self.begin_victory_dance(scoring_player_index);
             }
             return;
         }
@@ -187,10 +234,10 @@ impl GameState {
                 self.current_turn = 1 - self.current_turn;
                 self.active_shot = None;
 
-                if let Some(winner_index) =
-                    self.apply_scoring_result(thrower_index, resolution.result)
+                if let Some((victim_index, scoring_player_index)) =
+                    gorilla_explosion_for_result(thrower_index, resolution.result)
                 {
-                    self.begin_victory_dance(winner_index);
+                    self.begin_gorilla_explosion(victim_index, scoring_player_index);
                 }
             }
         } else {
@@ -198,10 +245,9 @@ impl GameState {
         }
     }
 
-    fn apply_scoring_result(&mut self, thrower_index: usize, result: ShotResult) -> Option<usize> {
-        let scoring_player = scoring_player_for_result(thrower_index, result)?;
-        self.players[scoring_player].score += 1;
-        Some(scoring_player)
+    fn begin_gorilla_explosion(&mut self, victim_index: usize, scoring_player_index: usize) {
+        self.gorillas[victim_index].pose = ArmPose::Down;
+        self.gorilla_explosion = Some(GorillaExplosion::new(victim_index, scoring_player_index));
     }
 
     fn begin_victory_dance(&mut self, winner_index: usize) {
@@ -221,11 +267,20 @@ impl GameState {
     }
 }
 
+#[allow(dead_code)]
 pub fn scoring_player_for_result(thrower_index: usize, result: ShotResult) -> Option<usize> {
+    gorilla_explosion_for_result(thrower_index, result)
+        .map(|(_, scoring_player_index)| scoring_player_index)
+}
+
+pub fn gorilla_explosion_for_result(
+    thrower_index: usize,
+    result: ShotResult,
+) -> Option<(usize, usize)> {
     match result {
         ShotResult::Miss => None,
-        ShotResult::HitPlayer(_) => Some(thrower_index),
-        ShotResult::HitSelf => Some(1 - thrower_index),
+        ShotResult::HitPlayer(victim_index) => Some((victim_index, thrower_index)),
+        ShotResult::HitSelf => Some((thrower_index, 1 - thrower_index)),
     }
 }
 
@@ -348,7 +403,7 @@ mod tests {
     }
 
     #[test]
-    fn scored_shot_updates_score_and_starts_fresh_round() {
+    fn scored_shot_triggers_gorilla_explosion_then_score_and_fresh_round() {
         let config = GameConfig::default();
         let mut rng = StdRng::seed_from_u64(123);
         let mut state = GameState::new_with_rng(config, &mut rng);
@@ -375,9 +430,20 @@ mod tests {
 
         state.update_animation();
 
-        assert_eq!(state.players[0].score, 1);
+        assert_eq!(state.players[0].score, 0);
         assert_eq!(state.players[1].score, 0);
         assert!(state.active_shot.is_none());
+        assert!(state.gorilla_explosion.is_some());
+        assert!(state.victory_dance.is_none());
+        assert_eq!(state.city, original_city);
+
+        for _ in 0..GorillaExplosion::TOTAL_FRAMES {
+            state.update_animation();
+        }
+
+        assert_eq!(state.players[0].score, 1);
+        assert_eq!(state.players[1].score, 0);
+        assert!(state.gorilla_explosion.is_none());
         assert!(state.victory_dance.is_some());
         assert_eq!(state.city, original_city);
 
@@ -387,6 +453,36 @@ mod tests {
 
         assert!(state.victory_dance.is_none());
         assert_ne!(state.city, original_city);
+    }
+
+    #[test]
+    fn gorilla_explosion_maps_victim_and_scorer_and_blocks_input() {
+        assert_eq!(gorilla_explosion_for_result(0, ShotResult::Miss), None);
+        assert_eq!(
+            gorilla_explosion_for_result(0, ShotResult::HitPlayer(1)),
+            Some((1, 0))
+        );
+        assert_eq!(
+            gorilla_explosion_for_result(1, ShotResult::HitPlayer(0)),
+            Some((0, 1))
+        );
+        assert_eq!(
+            gorilla_explosion_for_result(0, ShotResult::HitSelf),
+            Some((0, 1))
+        );
+
+        let config = GameConfig::default();
+        let mut rng = StdRng::seed_from_u64(123);
+        let mut state = GameState::new_with_rng(config, &mut rng);
+        state.begin_gorilla_explosion(0, 1);
+
+        assert!(!state.accepts_shot_input());
+        assert!(!state.submit_shot(0, 45.0, 10.0));
+        state.update_animation();
+        assert_eq!(
+            state.gorilla_explosion.map(|explosion| explosion.frame()),
+            Some(1)
+        );
     }
 
     #[test]
