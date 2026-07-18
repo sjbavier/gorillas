@@ -23,6 +23,40 @@ pub struct ActiveShot {
     post_impact_frames: u8,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct VictoryDance {
+    pub winner_index: usize,
+    frames_remaining: u8,
+    frame: u8,
+}
+
+impl VictoryDance {
+    const TOTAL_FRAMES: u8 = 48;
+    const POSE_TOGGLE_FRAMES: u8 = 8;
+
+    fn new(winner_index: usize) -> Self {
+        Self {
+            winner_index,
+            frames_remaining: Self::TOTAL_FRAMES,
+            frame: 0,
+        }
+    }
+
+    fn pose(self) -> ArmPose {
+        if (self.frame / Self::POSE_TOGGLE_FRAMES) % 2 == 0 {
+            ArmPose::LeftUp
+        } else {
+            ArmPose::RightUp
+        }
+    }
+
+    fn advance(&mut self) -> bool {
+        self.frame = self.frame.saturating_add(1);
+        self.frames_remaining = self.frames_remaining.saturating_sub(1);
+        self.frames_remaining == 0
+    }
+}
+
 impl ActiveShot {
     const IMPACT_HOLD_FRAMES: u8 = 20;
 
@@ -45,6 +79,7 @@ pub struct GameState {
     pub sun: Sun,
     pub current_turn: usize,
     pub active_shot: Option<ActiveShot>,
+    pub victory_dance: Option<VictoryDance>,
     pub last_shot: Option<ShotResolution>,
 }
 
@@ -67,6 +102,7 @@ impl GameState {
             sun,
             current_turn: 0,
             active_shot: None,
+            victory_dance: None,
             last_shot: None,
         }
     }
@@ -79,7 +115,7 @@ impl GameState {
     pub fn submit_shot(&mut self, player_index: usize, angle_degrees: f32, velocity: f32) -> bool {
         if player_index >= self.gorillas.len()
             || player_index != self.current_turn
-            || self.active_shot.is_some()
+            || !self.accepts_shot_input()
         {
             return false;
         }
@@ -115,7 +151,21 @@ impl GameState {
         true
     }
 
+    pub fn accepts_shot_input(&self) -> bool {
+        self.active_shot.is_none() && self.victory_dance.is_none()
+    }
+
     pub fn update_animation(&mut self) {
+        if let Some(victory_dance) = &mut self.victory_dance {
+            let winner_index = victory_dance.winner_index;
+            self.gorillas[winner_index].pose = victory_dance.pose();
+            if victory_dance.advance() {
+                self.victory_dance = None;
+                self.start_next_round();
+            }
+            return;
+        }
+
         let Some(active_shot) = &mut self.active_shot else {
             return;
         };
@@ -137,8 +187,10 @@ impl GameState {
                 self.current_turn = 1 - self.current_turn;
                 self.active_shot = None;
 
-                if self.apply_scoring_result(thrower_index, resolution.result) {
-                    self.start_next_round();
+                if let Some(winner_index) =
+                    self.apply_scoring_result(thrower_index, resolution.result)
+                {
+                    self.begin_victory_dance(winner_index);
                 }
             }
         } else {
@@ -146,13 +198,16 @@ impl GameState {
         }
     }
 
-    fn apply_scoring_result(&mut self, thrower_index: usize, result: ShotResult) -> bool {
-        let Some(scoring_player) = scoring_player_for_result(thrower_index, result) else {
-            return false;
-        };
-
+    fn apply_scoring_result(&mut self, thrower_index: usize, result: ShotResult) -> Option<usize> {
+        let scoring_player = scoring_player_for_result(thrower_index, result)?;
         self.players[scoring_player].score += 1;
-        true
+        Some(scoring_player)
+    }
+
+    fn begin_victory_dance(&mut self, winner_index: usize) {
+        self.gorillas[winner_index].pose = ArmPose::LeftUp;
+        self.gorillas[1 - winner_index].pose = ArmPose::Down;
+        self.victory_dance = Some(VictoryDance::new(winner_index));
     }
 
     fn start_next_round(&mut self) {
@@ -160,6 +215,9 @@ impl GameState {
         self.city = City::generate(&self.config, &mut rng);
         self.gorillas = place_gorillas(&self.city, &mut rng);
         self.sun = Sun::new(self.config.screen_width);
+        self.gorillas
+            .iter_mut()
+            .for_each(|gorilla| gorilla.pose = ArmPose::Down);
     }
 }
 
@@ -320,7 +378,34 @@ mod tests {
         assert_eq!(state.players[0].score, 1);
         assert_eq!(state.players[1].score, 0);
         assert!(state.active_shot.is_none());
+        assert!(state.victory_dance.is_some());
+        assert_eq!(state.city, original_city);
+
+        for _ in 0..VictoryDance::TOTAL_FRAMES {
+            state.update_animation();
+        }
+
+        assert!(state.victory_dance.is_none());
         assert_ne!(state.city, original_city);
+    }
+
+    #[test]
+    fn victory_dance_alternates_winner_pose_and_blocks_new_shots() {
+        let config = GameConfig::default();
+        let mut rng = StdRng::seed_from_u64(123);
+        let mut state = GameState::new_with_rng(config, &mut rng);
+
+        state.begin_victory_dance(1);
+        assert!(!state.accepts_shot_input());
+        assert!(!state.submit_shot(1, 45.0, 10.0));
+
+        state.update_animation();
+        assert_eq!(state.gorillas[1].pose, ArmPose::LeftUp);
+
+        for _ in 0..VictoryDance::POSE_TOGGLE_FRAMES {
+            state.update_animation();
+        }
+        assert_eq!(state.gorillas[1].pose, ArmPose::RightUp);
     }
 
     #[test]

@@ -38,7 +38,7 @@ fn main() -> Result<(), minifb::Error> {
     let mut shot_input = ShotInputState::new(game.current_turn);
 
     while !input::quit_requested(&window) {
-        if game.active_shot.is_none() {
+        if game.accepts_shot_input() {
             if shot_input.player_id != game.current_turn {
                 shot_input.reset_for_player(game.current_turn);
             }

@@ -232,9 +232,9 @@ Tasks:
 - [x] Define `Gorilla { position, player_index, pose }`.
 - [x] Port gorilla placement rules.
 - [x] Implement gorilla drawing with primitives, or create static pixel-art/vector sprite assets.
-- [ ] Implement pose switching for throws and victory dance.
+- [x] Implement pose switching for throws and victory dance.
   - [x] Switch the throwing gorilla pose during the throw animation.
-  - [ ] Implement victory dance pose switching.
+  - [x] Implement victory dance pose switching.
 - [x] Define gorilla collision bounds/mask.
 - [ ] Implement gorilla explosion animation.
 
@@ -318,7 +318,7 @@ Behavior to preserve:
 Tasks:
 
 - [ ] Decide whether to preserve fixed-round behavior or implement true play-to-N-points behavior; document decision.
-- [ ] Implement alternating turns.
+- [x] Implement alternating turns.
 - [x] Implement score updates.
 - [x] Handle self-hit scoring; opponent should receive point.
 - [x] Show current score during gameplay.
@@ -414,14 +414,14 @@ Tasks:
 - [ ] Alternate turns.
 - [x] Collect angle/velocity.
 - [x] Simulate/render banana trajectory.
-- [ ] Detect building collisions.
+- [x] Detect building collisions.
 
 ### Phase 4: Complete interactions
 
-- [ ] Detect gorilla collisions.
-- [ ] Detect sun interactions.
+- [x] Detect gorilla collisions.
+- [x] Detect sun interactions.
 - [ ] Add explosions.
-- [ ] Add victory dance.
+- [x] Add victory dance.
 - [ ] Add scoring and game-over flow.
 
 ### Phase 5: Polish
@@ -473,4 +473,4 @@ Networking is **not** part of the first basic port, but early architecture shoul
 - [x] Should the original CGA/EGA dual-mode scaling be preserved? Decision: target EGA 640x350 first; CGA scaling is deferred.
 - [ ] Should `NumGames` preserve original fixed-round behavior or become true play-to-N-points?
 - [ ] Is audio required for the first playable Rust version?
-- [ ] Should collision use pixel buffer color sampling or explicit geometry/masks?
+- [x] Should collision use pixel buffer color sampling or explicit geometry/masks?
