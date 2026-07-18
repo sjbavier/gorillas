@@ -6,6 +6,215 @@ use crate::entities::PlayerCommand;
 
 const MAX_SHOT_INPUT: usize = 6;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum SetupField {
+    Player1,
+    Player2,
+    Rounds,
+    Gravity,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct GameSetup {
+    pub player1_name: String,
+    pub player2_name: String,
+    pub round_limit: u32,
+    pub gravity: f32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct SetupInputState {
+    pub player1_name: String,
+    pub player2_name: String,
+    pub rounds: String,
+    pub gravity: String,
+    pub active_field: SetupField,
+}
+
+impl SetupInputState {
+    pub fn new() -> Self {
+        Self {
+            player1_name: String::new(),
+            player2_name: String::new(),
+            rounds: String::new(),
+            gravity: String::new(),
+            active_field: SetupField::Player1,
+        }
+    }
+
+    fn active_value_mut(&mut self) -> &mut String {
+        match self.active_field {
+            SetupField::Player1 => &mut self.player1_name,
+            SetupField::Player2 => &mut self.player2_name,
+            SetupField::Rounds => &mut self.rounds,
+            SetupField::Gravity => &mut self.gravity,
+        }
+    }
+
+    fn advance_field(&mut self) -> Option<GameSetup> {
+        self.active_field = match self.active_field {
+            SetupField::Player1 => SetupField::Player2,
+            SetupField::Player2 => SetupField::Rounds,
+            SetupField::Rounds => SetupField::Gravity,
+            SetupField::Gravity => return self.setup(),
+        };
+        None
+    }
+
+    pub fn setup(&self) -> Option<GameSetup> {
+        let round_limit = if self.rounds.trim().is_empty() {
+            3
+        } else {
+            let parsed: u32 = self.rounds.parse().ok()?;
+            if parsed == 0 {
+                return None;
+            }
+            parsed
+        };
+        let gravity = if self.gravity.trim().is_empty() {
+            9.8
+        } else {
+            let parsed: f32 = self.gravity.parse().ok()?;
+            if parsed <= 0.0 {
+                return None;
+            }
+            parsed
+        };
+        Some(GameSetup {
+            player1_name: setup_name(&self.player1_name, "Player 1"),
+            player2_name: setup_name(&self.player2_name, "Player 2"),
+            round_limit,
+            gravity,
+        })
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum SetupInputEvent {
+    Editing,
+    Complete(GameSetup),
+}
+
+pub fn update_setup_input(window: &Window, state: &mut SetupInputState) -> SetupInputEvent {
+    for key in window.get_keys_pressed(KeyRepeat::No) {
+        match key {
+            Key::Enter | Key::NumPadEnter => {
+                if let Some(setup) = state.advance_field() {
+                    return SetupInputEvent::Complete(setup);
+                }
+            }
+            Key::Tab => {
+                let _ = state.advance_field();
+            }
+            Key::Backspace | Key::Delete => {
+                state.active_value_mut().pop();
+            }
+            key => {
+                if let Some(ch) = key_to_setup_char(key) {
+                    push_setup_char(state, ch);
+                }
+            }
+        }
+    }
+    SetupInputEvent::Editing
+}
+
+pub fn any_continue_key_pressed(window: &Window) -> bool {
+    !window.get_keys_pressed(KeyRepeat::No).is_empty()
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum MenuChoice {
+    ViewIntro,
+    PlayGame,
+}
+
+pub fn update_menu_input(window: &Window) -> Option<MenuChoice> {
+    for key in window.get_keys_pressed(KeyRepeat::No) {
+        match key {
+            Key::V => return Some(MenuChoice::ViewIntro),
+            Key::P | Key::Enter | Key::NumPadEnter => return Some(MenuChoice::PlayGame),
+            _ => {}
+        }
+    }
+    None
+}
+
+fn setup_name(value: &str, default: &str) -> String {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        default.to_string()
+    } else {
+        trimmed.chars().take(10).collect()
+    }
+}
+
+fn push_setup_char(state: &mut SetupInputState, ch: char) {
+    match state.active_field {
+        SetupField::Player1 | SetupField::Player2 => {
+            let value = state.active_value_mut();
+            if value.chars().count() < 10 {
+                value.push(ch);
+            }
+        }
+        SetupField::Rounds => {
+            if ch.is_ascii_digit() && state.rounds.len() < 2 {
+                let mut candidate = state.rounds.clone();
+                candidate.push(ch);
+                if candidate.parse::<u32>().is_ok_and(|n| n > 0) {
+                    state.rounds.push(ch);
+                }
+            }
+        }
+        SetupField::Gravity => {
+            let value = &mut state.gravity;
+            if value.len() < 6 && (ch.is_ascii_digit() || ch == '.') {
+                if ch == '.' && value.contains('.') {
+                    return;
+                }
+                let mut candidate = value.clone();
+                candidate.push(ch);
+                if candidate == "." || candidate.parse::<f32>().is_ok_and(|n| n > 0.0) {
+                    value.push(ch);
+                }
+            }
+        }
+    }
+}
+
+fn key_to_setup_char(key: Key) -> Option<char> {
+    match key {
+        Key::Space => Some(' '),
+        Key::A => Some('A'),
+        Key::B => Some('B'),
+        Key::C => Some('C'),
+        Key::D => Some('D'),
+        Key::E => Some('E'),
+        Key::F => Some('F'),
+        Key::G => Some('G'),
+        Key::H => Some('H'),
+        Key::I => Some('I'),
+        Key::J => Some('J'),
+        Key::K => Some('K'),
+        Key::L => Some('L'),
+        Key::M => Some('M'),
+        Key::N => Some('N'),
+        Key::O => Some('O'),
+        Key::P => Some('P'),
+        Key::Q => Some('Q'),
+        Key::R => Some('R'),
+        Key::S => Some('S'),
+        Key::T => Some('T'),
+        Key::U => Some('U'),
+        Key::V => Some('V'),
+        Key::W => Some('W'),
+        Key::X => Some('X'),
+        Key::Y => Some('Y'),
+        Key::Z => Some('Z'),
+        other => key_to_numeric_char(other),
+    }
+}
+
 pub fn quit_requested(window: &Window) -> bool {
     !window.is_open() || window.is_key_down(Key::Escape)
 }
@@ -53,7 +262,7 @@ impl ShotInputState {
         parse_shot_number(&self.velocity)
     }
 
-    fn command(&self) -> Option<PlayerCommand> {
+    pub fn command(&self) -> Option<PlayerCommand> {
         Some(PlayerCommand::SubmitShot {
             player_id: self.player_id,
             angle_degrees: self.angle_value()?,
@@ -113,7 +322,7 @@ fn push_numeric_char(value: &mut String, ch: char) {
     }
 }
 
-fn parse_shot_number(value: &str) -> Option<f32> {
+pub fn parse_shot_number(value: &str) -> Option<f32> {
     if value.is_empty() || value == "." {
         return None;
     }
@@ -169,6 +378,26 @@ mod tests {
             push_numeric_char(&mut decimal, ch);
         }
         assert_eq!(decimal, "4.5");
+    }
+
+    #[test]
+    fn setup_defaults_and_limits_match_original_prompts() {
+        let setup = SetupInputState::new().setup().expect("default setup");
+        assert_eq!(setup.player1_name, "Player 1");
+        assert_eq!(setup.player2_name, "Player 2");
+        assert_eq!(setup.round_limit, 3);
+        assert_eq!(setup.gravity, 9.8);
+
+        let mut input = SetupInputState::new();
+        input.player1_name = "LongPlayerName".into();
+        input.player2_name = "".into();
+        input.rounds = "12".into();
+        input.gravity = "1.6".into();
+        let setup = input.setup().expect("custom setup");
+        assert_eq!(setup.player1_name, "LongPlayer");
+        assert_eq!(setup.player2_name, "Player 2");
+        assert_eq!(setup.round_limit, 12);
+        assert_eq!(setup.gravity, 1.6);
     }
 
     #[test]

@@ -11,6 +11,9 @@ use crate::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ScreenState {
+    Intro,
+    Setup,
+    Menu,
     Playing,
     GameOver,
 }
@@ -137,6 +140,7 @@ pub struct GameState {
     pub config: GameConfig,
     pub players: [Player; 2],
     pub screen: ScreenState,
+    pub setup_completed: bool,
     pub round_limit: u32,
     pub completed_rounds: u32,
     pub city: City,
@@ -164,6 +168,7 @@ impl GameState {
             config,
             players: [Player::new(0, "Player 1"), Player::new(1, "Player 2")],
             screen: ScreenState::Playing,
+            setup_completed: true,
             round_limit: 3,
             completed_rounds: 0,
             city,
@@ -223,6 +228,54 @@ impl GameState {
         true
     }
 
+    pub fn continue_intro(&mut self) {
+        self.screen = if self.setup_completed {
+            ScreenState::Menu
+        } else {
+            ScreenState::Setup
+        };
+    }
+
+    pub fn apply_setup(
+        &mut self,
+        player1_name: impl Into<String>,
+        player2_name: impl Into<String>,
+        round_limit: u32,
+        gravity: f32,
+    ) {
+        self.players[0].name = player1_name.into();
+        self.players[1].name = player2_name.into();
+        self.players[0].score = 0;
+        self.players[1].score = 0;
+        self.round_limit = round_limit.max(1);
+        self.config.gravity = gravity;
+        self.completed_rounds = 0;
+        self.setup_completed = true;
+        self.screen = ScreenState::Menu;
+    }
+
+    pub fn view_intro(&mut self) {
+        if self.screen == ScreenState::Menu {
+            self.screen = ScreenState::Intro;
+        }
+    }
+
+    pub fn start_match(&mut self) {
+        if self.screen != ScreenState::Menu {
+            return;
+        }
+        self.players[0].score = 0;
+        self.players[1].score = 0;
+        self.completed_rounds = 0;
+        self.current_turn = 0;
+        self.active_shot = None;
+        self.victory_dance = None;
+        self.gorilla_explosion = None;
+        self.shot_explosion = None;
+        self.last_shot = None;
+        self.start_next_round();
+    }
+
     pub fn accepts_shot_input(&self) -> bool {
         self.screen == ScreenState::Playing
             && self.active_shot.is_none()
@@ -232,7 +285,7 @@ impl GameState {
     }
 
     pub fn update_animation(&mut self) {
-        if self.screen == ScreenState::GameOver {
+        if self.screen != ScreenState::Playing {
             return;
         }
 
@@ -600,6 +653,34 @@ mod tests {
 
         assert!(state.victory_dance.is_none());
         assert_ne!(state.city, original_city);
+    }
+
+    #[test]
+    fn setup_flow_applies_names_rounds_and_gravity_then_starts_match() {
+        let config = GameConfig::default();
+        let mut rng = StdRng::seed_from_u64(123);
+        let mut state = GameState::new_with_rng(config, &mut rng);
+        state.screen = ScreenState::Intro;
+        state.setup_completed = false;
+
+        state.continue_intro();
+        assert_eq!(state.screen, ScreenState::Setup);
+
+        state.apply_setup("Ada", "Grace", 5, 1.6);
+        assert_eq!(state.screen, ScreenState::Menu);
+        assert_eq!(state.players[0].name, "Ada");
+        assert_eq!(state.players[1].name, "Grace");
+        assert_eq!(state.round_limit, 5);
+        assert_eq!(state.config.gravity, 1.6);
+
+        state.view_intro();
+        assert_eq!(state.screen, ScreenState::Intro);
+        state.continue_intro();
+        assert_eq!(state.screen, ScreenState::Menu);
+        state.start_match();
+        assert_eq!(state.screen, ScreenState::Playing);
+        assert_eq!(state.completed_rounds, 0);
+        assert_eq!(state.current_turn, 0);
     }
 
     #[test]

@@ -9,7 +9,7 @@ use crate::{
     config::Color,
     entities::{ArmPose, Gorilla, Sun, SunMood},
     game::{ActiveShot, GameState, GorillaExplosion, ScreenState, ShotExplosion},
-    input::{ShotInputField, ShotInputState},
+    input::{SetupField, SetupInputState, ShotInputField, ShotInputState},
 };
 
 pub struct Renderer {
@@ -29,9 +29,151 @@ impl Renderer {
 
     pub fn draw(&mut self, state: &GameState, shot_input: Option<&ShotInputState>) {
         match state.screen {
+            ScreenState::Intro => self.draw_intro(state),
+            ScreenState::Setup => self.draw_setup(None),
+            ScreenState::Menu => self.draw_menu(state),
             ScreenState::Playing => self.draw_playing(state, shot_input),
             ScreenState::GameOver => self.draw_game_over(state),
         }
+    }
+
+    pub fn draw_setup(&mut self, setup_input: Option<&SetupInputState>) {
+        let text = 0xffffff;
+        let dim = 0xc0c0c0;
+        self.clear(0);
+        self.draw_centered_text("Q B a s i c    G O R I L L A S", 44, 2, text);
+        self.draw_text(
+            "Name of Player 1 (Default = 'Player 1'):",
+            104,
+            104,
+            1,
+            text,
+        );
+        self.draw_text(
+            "Name of Player 2 (Default = 'Player 2'):",
+            104,
+            128,
+            1,
+            text,
+        );
+        self.draw_text(
+            "Play to how many total points (Default = 3):",
+            104,
+            152,
+            1,
+            text,
+        );
+        self.draw_text("Gravity in Meters/Sec (Earth = 9.8):", 104, 176, 1, text);
+        if let Some(input) = setup_input {
+            self.draw_setup_value(
+                &input.player1_name,
+                input.active_field == SetupField::Player1,
+                448,
+                104,
+                text,
+            );
+            self.draw_setup_value(
+                &input.player2_name,
+                input.active_field == SetupField::Player2,
+                448,
+                128,
+                text,
+            );
+            self.draw_setup_value(
+                &input.rounds,
+                input.active_field == SetupField::Rounds,
+                464,
+                152,
+                text,
+            );
+            self.draw_setup_value(
+                &input.gravity,
+                input.active_field == SetupField::Gravity,
+                424,
+                176,
+                text,
+            );
+        } else {
+            self.draw_text("_", 448, 104, 1, text);
+        }
+        self.draw_centered_text(
+            "Enter accepts a field; blank entries use defaults",
+            250,
+            1,
+            dim,
+        );
+        self.draw_centered_text("Esc quits", 326, 1, dim);
+    }
+
+    fn draw_setup_value(&mut self, value: &str, active: bool, x: usize, y: usize, color: Color) {
+        let mut shown = value.to_string();
+        if active {
+            shown.push('_');
+        }
+        self.draw_text(&shown, x, y, 1, color);
+    }
+
+    fn draw_intro(&mut self, state: &GameState) {
+        let palette = state.config.palette;
+        self.clear(0);
+        self.draw_centered_text("Q B a s i c    G O R I L L A S", 52, 2, palette.text);
+        self.draw_centered_text("Copyright (C) IBM Corporation 1991", 84, 1, 0xc0c0c0);
+        self.draw_centered_text(
+            "Your mission is to hit your opponent with the exploding",
+            124,
+            1,
+            palette.text,
+        );
+        self.draw_centered_text(
+            "banana by varying the angle and power of your throw, taking",
+            140,
+            1,
+            palette.text,
+        );
+        self.draw_centered_text(
+            "into account wind speed, gravity, and the city skyline.",
+            156,
+            1,
+            palette.text,
+        );
+        self.draw_centered_text(
+            "The wind speed is shown by a directional arrow at the bottom",
+            172,
+            1,
+            palette.text,
+        );
+        self.draw_centered_text(
+            "of the playing field, its length relative to its strength.",
+            188,
+            1,
+            palette.text,
+        );
+        self.draw_centered_text("Press any key to continue", 326, 1, palette.text);
+    }
+
+    fn draw_menu(&mut self, state: &GameState) {
+        let palette = state.config.palette;
+        self.clear(0);
+        self.draw_centered_text("Q B A S I C   G O R I L L A S", 32, 2, palette.text);
+        self.draw_centered_text("STARRING:", 72, 1, palette.text);
+        let starring = format!("{} AND {}", state.players[0].name, state.players[1].name);
+        self.draw_centered_text(&starring, 92, 1, palette.text);
+
+        let mut left = state.gorillas[0];
+        let mut right = state.gorillas[1];
+        left.position.x = 250;
+        left.position.y = 122;
+        left.pose = ArmPose::LeftUp;
+        right.position.x = 360;
+        right.position.y = 122;
+        right.pose = ArmPose::RightUp;
+        self.draw_gorilla(&left, palette.object, 0);
+        self.draw_gorilla(&right, palette.object, 0);
+
+        self.draw_centered_text("--------------", 232, 1, palette.text);
+        self.draw_centered_text("V = View Intro", 256, 1, palette.text);
+        self.draw_centered_text("P = Play Game", 272, 1, palette.text);
+        self.draw_centered_text("Your Choice?", 304, 1, palette.text);
     }
 
     pub fn draw_playing(&mut self, state: &GameState, shot_input: Option<&ShotInputState>) {
@@ -61,38 +203,6 @@ impl Renderer {
             self.draw_shot_explosion(explosion, palette.explosion, palette.background);
         }
 
-        self.draw_centered_text("Q B a s i c    G O R I L L A S", 44, 3, palette.text);
-        self.draw_centered_text("Copyright (C) IBM Corporation 1991", 84, 2, 0xc0c0c0);
-        self.draw_centered_text(
-            "Your mission is to hit your opponent with the exploding",
-            124,
-            2,
-            palette.text,
-        );
-        self.draw_centered_text(
-            "banana by varying the angle and power of your throw, taking",
-            148,
-            2,
-            palette.text,
-        );
-        self.draw_centered_text(
-            "into account wind speed, gravity, and the city skyline.",
-            172,
-            2,
-            palette.text,
-        );
-        self.draw_centered_text(
-            "The wind speed is shown by a directional arrow at the bottom",
-            196,
-            2,
-            palette.text,
-        );
-        self.draw_centered_text(
-            "of the playing field, its length relative to its strength.",
-            220,
-            2,
-            palette.text,
-        );
         if let Some(shot_input) = shot_input {
             self.draw_shot_prompt(state, shot_input);
         }

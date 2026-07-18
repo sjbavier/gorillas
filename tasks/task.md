@@ -140,16 +140,16 @@ Original main flow:
 
 Tasks:
 
-- [ ] Implement startup initialization.
-- [ ] Implement intro screen with instructions.
+- [x] Implement startup initialization.
+- [x] Implement intro screen with instructions.
 - [ ] Implement input collection:
-  - [ ] Player 1 name, default `Player 1`, max 10 chars.
-  - [ ] Player 2 name, default `Player 2`, max 10 chars.
-  - [ ] Play-to score, default `3`.
-  - [ ] Gravity, default `9.8`.
+  - [x] Player 1 name, default `Player 1`, max 10 chars.
+  - [x] Player 2 name, default `Player 2`, max 10 chars.
+  - [x] Play-to score, default `3`.
+  - [x] Gravity, default `9.8`.
 - [ ] Implement menu choice:
-  - [ ] View intro animation.
-  - [ ] Play game.
+  - [x] View intro animation.
+  - [x] Play game.
 - [ ] Implement game-over screen and final score.
 - [ ] Decide whether to loop back for another match after game over.
 
@@ -334,10 +334,10 @@ Original routines:
 
 Tasks:
 
-- [ ] Implement blocking text input for setup screens.
+- [x] Implement blocking text input for setup screens.
 - [x] Implement per-turn angle and velocity input.
-- [ ] Implement keypress-to-continue screens.
-- [ ] Implement menu key handling for `V` and `P`.
+- [x] Implement keypress-to-continue screens.
+- [x] Implement menu key handling for `V` and `P`.
 - [ ] Consider escape/quit support.
 
 ## Timing and animation
@@ -410,7 +410,7 @@ Tasks:
 
 ### Phase 3: Gameplay loop
 
-- [ ] Collect setup input.
+- [x] Collect setup input.
 - [ ] Alternate turns.
 - [x] Collect angle/velocity.
 - [x] Simulate/render banana trajectory.
@@ -438,10 +438,10 @@ Tasks:
 - [ ] `InitVars` -> `GameConfig::new` / renderer setup.
 - [ ] `CalcDelay!` -> remove/replace with frame timing.
 - [ ] `Center` -> renderer text helper.
-- [ ] `Intro` -> intro screen state.
-- [ ] `SparklePause` -> keypress wait, optional border animation.
-- [ ] `GetInputs` -> setup input screen.
-- [ ] `GorillaIntro` -> menu/intro animation state.
+- [x] `Intro` -> intro screen state.
+- [x] `SparklePause` -> keypress wait, optional border animation.
+- [x] `GetInputs` -> setup input screen.
+- [x] `GorillaIntro` -> menu/intro animation state.
 - [ ] `SetScreen` -> palette/theme setup.
 - [x] `MakeCityScape` -> `city::generate_city`.
 - [x] `PlaceGorillas` -> `game::place_gorillas`.
