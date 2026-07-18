@@ -283,10 +283,10 @@ Tasks:
   - [ ] Digits and one decimal point.
   - [ ] Angle/velocity value capped around 360 by original input code.
 - [ ] Implement player 2 angle transformation.
-- [ ] Implement banana spawn offset based on throwing player.
-- [ ] Implement banana rotation frames.
-- [ ] Implement projectile simulation using the original formula.
-- [ ] Implement off-screen detection.
+- [x] Implement banana spawn offset based on throwing player.
+- [x] Implement banana rotation frames.
+- [x] Implement projectile simulation using the original formula.
+- [x] Implement off-screen detection.
 - [ ] Implement collision with:
   - [ ] Buildings/city.
   - [ ] Gorillas.
@@ -369,10 +369,10 @@ Tasks:
 Tasks:
 
 - [ ] Add unit tests for pure logic:
-  - [ ] Trajectory coordinate calculations.
+  - [x] Trajectory coordinate calculations.
   - [x] Wind generation range/rules.
   - [ ] Score updates including self-hit.
-  - [ ] Player 2 angle transformation.
+  - [x] Player 2 angle transformation.
   - [x] Building generation does not exceed screen bounds.
 - [ ] Add deterministic random seed support for repeatable tests.
 - [ ] Add manual test checklist:
@@ -401,8 +401,8 @@ Tasks:
 
 - [x] Render background.
 - [x] Generate/render skyline.
-- [ ] Place/render gorillas.
-- [ ] Render sun.
+- [x] Place/render gorillas.
+- [x] Render sun.
 - [ ] Render score/header text.
 
 ### Phase 3: Gameplay loop
@@ -439,9 +439,9 @@ Tasks:
 - [ ] `GorillaIntro` -> menu/intro animation state.
 - [ ] `SetScreen` -> palette/theme setup.
 - [x] `MakeCityScape` -> `city::generate_city`.
-- [ ] `PlaceGorillas` -> `game::place_gorillas`.
-- [ ] `DrawGorilla` -> `render::draw_gorilla` or sprite asset generation.
-- [ ] `DoSun` -> `render::draw_sun` / `Sun` state.
+- [x] `PlaceGorillas` -> `game::place_gorillas`.
+- [x] `DrawGorilla` -> `render::draw_gorilla` or sprite asset generation.
+- [x] `DoSun` -> `render::draw_sun` / `Sun` state.
 - [ ] `DoShot` -> turn input plus shot execution.
 - [ ] `PlotShot` -> projectile simulation and collision.
 - [ ] `DrawBan` -> `render::draw_banana`.
@@ -457,7 +457,7 @@ Tasks:
 Networking is **not** part of the first basic port, but early architecture should reduce future refactor cost.
 
 - [x] Define player actions as serializable command-like structs/enums when core gameplay begins.
-- [ ] Keep projectile physics and scoring deterministic and independent from rendering.
+- [x] Keep projectile physics and scoring deterministic and independent from rendering.
 - [ ] Keep local input code separate from turn resolution.
 - [ ] Keep game-state updates possible from either local input or future network messages.
 - [ ] Consider adding `serde` later for commands/state snapshots if/when networking starts.

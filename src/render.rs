@@ -2,7 +2,14 @@
 
 use font8x8::{UnicodeFonts, BASIC_FONTS};
 
-use crate::{config::Color, game::GameState};
+use std::f32::consts::PI;
+
+use crate::{
+    city::City,
+    config::Color,
+    entities::{ArmPose, Gorilla, Sun, SunMood},
+    game::GameState,
+};
 
 pub struct Renderer {
     width: usize,
@@ -19,43 +26,159 @@ impl Renderer {
         }
     }
 
+    pub fn draw(&mut self, state: &GameState) {
+        self.draw_intro(state);
+    }
+
     pub fn draw_intro(&mut self, state: &GameState) {
         let palette = state.config.palette;
         self.clear(palette.background);
+        self.draw_sun(&state.sun, palette.sun, palette.background);
+        self.draw_city(&state.city, palette.background, palette.explosion);
+        for gorilla in &state.gorillas {
+            self.draw_gorilla(gorilla, palette.object, palette.background);
+        }
 
-        self.draw_centered_text("Q B a s i c    G O R I L L A S", 64, 3, palette.text);
-        self.draw_centered_text("Copyright (C) IBM Corporation 1991", 104, 2, 0xc0c0c0);
+        self.draw_centered_text("Q B a s i c    G O R I L L A S", 44, 3, palette.text);
+        self.draw_centered_text("Copyright (C) IBM Corporation 1991", 84, 2, 0xc0c0c0);
         self.draw_centered_text(
             "Your mission is to hit your opponent with the exploding",
-            144,
+            124,
             2,
             palette.text,
         );
         self.draw_centered_text(
             "banana by varying the angle and power of your throw, taking",
-            168,
+            148,
             2,
             palette.text,
         );
         self.draw_centered_text(
             "into account wind speed, gravity, and the city skyline.",
-            192,
+            172,
             2,
             palette.text,
         );
         self.draw_centered_text(
             "The wind speed is shown by a directional arrow at the bottom",
-            216,
+            196,
             2,
             palette.text,
         );
         self.draw_centered_text(
             "of the playing field, its length relative to its strength.",
-            240,
+            220,
             2,
             palette.text,
         );
         self.draw_centered_text("Press Esc to quit", 326, 2, 0xffff55);
+    }
+
+    fn draw_sun(&mut self, sun: &Sun, color: Color, feature_color: Color) {
+        let (x, y) = sun.center;
+        self.draw_line(x - 20, y, x + 20, y, color);
+        self.draw_line(x, y - 15, x, y + 15, color);
+        self.draw_line(x - 15, y - 10, x + 15, y + 10, color);
+        self.draw_line(x - 15, y + 10, x + 15, y - 10, color);
+        self.draw_line(x - 8, y - 13, x + 8, y + 13, color);
+        self.draw_line(x - 8, y + 13, x + 8, y - 13, color);
+        self.draw_line(x - 18, y - 5, x + 18, y + 5, color);
+        self.draw_line(x - 18, y + 5, x + 18, y - 5, color);
+        self.fill_circle(x, y, sun.radius, color);
+        self.draw_circle(x, y, sun.radius, color);
+
+        match sun.mood {
+            SunMood::Happy => self.draw_arc(x, y, 8, 210.0, 330.0, feature_color),
+            SunMood::Shocked => {
+                self.fill_circle(x, y + 5, 3, feature_color);
+                self.draw_circle(x, y + 5, 3, feature_color);
+            }
+        }
+        self.fill_circle(x - 3, y - 2, 1, feature_color);
+        self.fill_circle(x + 3, y - 2, 1, feature_color);
+    }
+
+    fn draw_gorilla(&mut self, gorilla: &Gorilla, color: Color, feature_color: Color) {
+        let (x, y) = gorilla.draw_anchor();
+
+        // Head, brow, and nose.
+        self.fill_rect_i32(x - 4, y, 8, 7, color);
+        self.fill_rect_i32(x - 5, y + 2, 10, 3, color);
+        self.draw_line(x - 3, y + 2, x + 2, y + 2, feature_color);
+        self.set_pixel(x - 2, y + 4, feature_color);
+        self.set_pixel(x - 1, y + 4, feature_color);
+        self.set_pixel(x + 1, y + 4, feature_color);
+        self.set_pixel(x + 2, y + 4, feature_color);
+
+        // Neck/body.
+        self.draw_line(x - 3, y + 7, x + 2, y + 7, color);
+        self.fill_rect_i32(x - 8, y + 8, 16, 7, color);
+        self.fill_rect_i32(x - 6, y + 15, 12, 6, color);
+
+        // Arms as thick arcs similar to the QBasic vector sprite.
+        match gorilla.pose {
+            ArmPose::RightUp => {
+                self.draw_thick_arc(x - 3, y + 14, 9, 135.0, 225.0, color, 5);
+                self.draw_thick_arc(x + 2, y + 4, 9, 315.0, 405.0, color, 5);
+            }
+            ArmPose::LeftUp => {
+                self.draw_thick_arc(x - 3, y + 4, 9, 135.0, 225.0, color, 5);
+                self.draw_thick_arc(x + 2, y + 14, 9, 315.0, 405.0, color, 5);
+            }
+            ArmPose::Down => {
+                self.draw_thick_arc(x - 3, y + 14, 9, 135.0, 225.0, color, 5);
+                self.draw_thick_arc(x + 2, y + 14, 9, 315.0, 405.0, color, 5);
+            }
+        }
+
+        // Legs and chest accents.
+        self.draw_thick_arc(x + 2, y + 25, 10, 135.0, 202.5, color, 5);
+        self.draw_thick_arc(x - 6, y + 25, 10, 337.5, 405.0, color, 5);
+        self.draw_arc(x - 5, y + 10, 5, 270.0, 360.0, feature_color);
+        self.draw_arc(x + 5, y + 10, 5, 180.0, 270.0, feature_color);
+    }
+
+    fn draw_city(&mut self, city: &City, background: Color, wind_color: Color) {
+        for building in &city.buildings {
+            self.draw_rect_outline(
+                building.x - 1,
+                city.bottom_line - building.height - 1,
+                building.width + 3,
+                building.height + 3,
+                background,
+            );
+            self.fill_rect_i32(
+                building.x,
+                building.y,
+                building.width + 1,
+                building.height + 1,
+                building.color,
+            );
+            for window in &building.windows {
+                self.fill_rect_i32(
+                    window.x,
+                    window.y,
+                    window.width + 1,
+                    window.height + 1,
+                    window.color,
+                );
+            }
+        }
+        self.draw_wind_arrow(city.wind, wind_color);
+    }
+
+    fn draw_wind_arrow(&mut self, wind: i32, color: Color) {
+        if wind == 0 {
+            return;
+        }
+        let start_x = (self.width / 2) as i32;
+        let y = self.height as i32 - 5;
+        let wind_line = wind * 3 * (self.width as i32 / 320);
+        let end_x = start_x + wind_line;
+        let arrow_dir = if wind > 0 { -2 } else { 2 };
+        self.draw_line(start_x, y, end_x, y, color);
+        self.draw_line(end_x, y, end_x + arrow_dir, y - 2, color);
+        self.draw_line(end_x, y, end_x + arrow_dir, y + 2, color);
     }
 
     fn clear(&mut self, color: Color) {
@@ -87,11 +210,124 @@ impl Renderer {
         }
     }
 
+    fn draw_rect_outline(&mut self, x: i32, y: i32, width: i32, height: i32, color: Color) {
+        self.draw_line(x, y, x + width - 1, y, color);
+        self.draw_line(x, y + height - 1, x + width - 1, y + height - 1, color);
+        self.draw_line(x, y, x, y + height - 1, color);
+        self.draw_line(x + width - 1, y, x + width - 1, y + height - 1, color);
+    }
+
+    fn draw_line(&mut self, x0: i32, y0: i32, x1: i32, y1: i32, color: Color) {
+        let mut x0 = x0;
+        let mut y0 = y0;
+        let dx = (x1 - x0).abs();
+        let sx = if x0 < x1 { 1 } else { -1 };
+        let dy = -(y1 - y0).abs();
+        let sy = if y0 < y1 { 1 } else { -1 };
+        let mut err = dx + dy;
+
+        loop {
+            self.set_pixel(x0, y0, color);
+            if x0 == x1 && y0 == y1 {
+                break;
+            }
+            let e2 = 2 * err;
+            if e2 >= dy {
+                err += dy;
+                x0 += sx;
+            }
+            if e2 <= dx {
+                err += dx;
+                y0 += sy;
+            }
+        }
+    }
+
     fn fill_rect(&mut self, x: usize, y: usize, width: usize, height: usize, color: Color) {
         for py in y..(y + height).min(self.height) {
             for px in x..(x + width).min(self.width) {
                 self.buffer[py * self.width + px] = color;
             }
+        }
+    }
+
+    fn fill_rect_i32(&mut self, x: i32, y: i32, width: i32, height: i32, color: Color) {
+        let start_x = x.max(0) as usize;
+        let start_y = y.max(0) as usize;
+        let end_x = (x + width).min(self.width as i32).max(0) as usize;
+        let end_y = (y + height).min(self.height as i32).max(0) as usize;
+        for py in start_y..end_y {
+            for px in start_x..end_x {
+                self.buffer[py * self.width + px] = color;
+            }
+        }
+    }
+
+    fn fill_circle(&mut self, center_x: i32, center_y: i32, radius: i32, color: Color) {
+        for dy in -radius..=radius {
+            for dx in -radius..=radius {
+                if dx * dx + dy * dy <= radius * radius {
+                    self.set_pixel(center_x + dx, center_y + dy, color);
+                }
+            }
+        }
+    }
+
+    fn draw_circle(&mut self, center_x: i32, center_y: i32, radius: i32, color: Color) {
+        self.draw_arc(center_x, center_y, radius, 0.0, 360.0, color);
+    }
+
+    fn draw_thick_arc(
+        &mut self,
+        center_x: i32,
+        center_y: i32,
+        radius: i32,
+        start_degrees: f32,
+        end_degrees: f32,
+        color: Color,
+        thickness: i32,
+    ) {
+        for offset in 0..thickness {
+            self.draw_arc(
+                center_x,
+                center_y,
+                radius - offset / 2,
+                start_degrees,
+                end_degrees,
+                color,
+            );
+        }
+    }
+
+    fn draw_arc(
+        &mut self,
+        center_x: i32,
+        center_y: i32,
+        radius: i32,
+        start_degrees: f32,
+        end_degrees: f32,
+        color: Color,
+    ) {
+        let steps = ((end_degrees - start_degrees).abs() as i32).max(1) * 2;
+        let mut previous = None;
+        for step in 0..=steps {
+            let degrees =
+                start_degrees + (end_degrees - start_degrees) * step as f32 / steps as f32;
+            let radians = degrees * PI / 180.0;
+            let x = center_x + (radius as f32 * radians.cos()).round() as i32;
+            let y = center_y + (radius as f32 * radians.sin()).round() as i32;
+            if let Some((px, py)) = previous {
+                self.draw_line(px, py, x, y, color);
+            } else {
+                self.set_pixel(x, y, color);
+            }
+            previous = Some((x, y));
+        }
+    }
+
+    fn set_pixel(&mut self, x: i32, y: i32, color: Color) {
+        if x >= 0 && y >= 0 && x < self.width as i32 && y < self.height as i32 {
+            self.buffer[y as usize * self.width + x as usize] = color;
         }
     }
 }

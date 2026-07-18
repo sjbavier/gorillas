@@ -15,6 +15,7 @@ pub struct Palette {
     pub object: Color,
     pub window: Color,
     pub sun: Color,
+    pub explosion: Color,
     pub text: Color,
 }
 
@@ -39,6 +40,7 @@ impl Default for GameConfig {
                 object: rgb(170, 85, 0),
                 window: rgb(255, 255, 85),
                 sun: rgb(85, 255, 255),
+                explosion: rgb(255, 85, 85),
                 text: rgb(255, 255, 255),
             },
         }

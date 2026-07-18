@@ -1,8 +1,10 @@
 mod audio;
+mod city;
 mod config;
 mod entities;
 mod game;
 mod input;
+mod physics;
 mod render;
 
 use minifb::{Scale, Window, WindowOptions};
@@ -28,7 +30,7 @@ fn main() -> Result<(), minifb::Error> {
     let mut renderer = Renderer::new(config.screen_width, config.screen_height);
 
     while !input::quit_requested(&window) {
-        renderer.draw_intro(&game);
+        renderer.draw(&game);
         window.update_with_buffer(&renderer.buffer, config.screen_width, config.screen_height)?;
     }
 

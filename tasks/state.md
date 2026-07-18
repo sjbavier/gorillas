@@ -2,23 +2,24 @@
 
 ## Snapshot
 
-- Last updated: 2026-07-17 22:22 EDT
+- Last updated: 2026-07-17 22:27 EDT
 - Working directory: `/home/b4v1n4t0r/rust_projects/gorillas`
 - Source reference: `GORILLA.BAS`
 - Current backend: windowed 2D via `minifb` (`macroquad` was preferred initially but failed on the available toolchain/dependency set).
-- Latest verified commands: `cargo fmt`, `cargo test`, `cargo check` all passed after gorilla/sun static-scene work.
+- Latest verified commands: `cargo fmt`, `cargo test`, `cargo check` all passed after rendering-independent banana physics work.
 
 ## Current implementation status
 
 - Cargo binary crate exists and builds.
 - Fixed EGA-like target resolution is 640x350.
-- Module skeletons exist: `main`, `config`, `entities`, `game`, `city`, `render`, `input`, and `audio`.
+- Module skeletons exist: `main`, `config`, `entities`, `game`, `city`, `physics`, `render`, `input`, and `audio`.
 - Intro window renders with QBasic-inspired instructions; Esc quits.
 - City skyline generation/rendering is implemented with buildings, windows, wind generation, and wind arrow.
 - Core entities include `Point`, `Bounds`, `ArmPose`, `SunMood`, `ShotResult`, `PlayerCommand::SubmitShot`, `Player`, `Gorilla`, and `Sun`.
 - Game state generates a city, places gorillas, and creates a happy sun.
 - Renderer draws the skyline, wind arrow, sun, and simple vector gorillas.
-- Unit tests cover city bounds/window bounds, wind range, and gorilla rooftop placement.
+- Rendering-independent banana trajectory helpers now cover player-2 angle mirroring, EGA spawn offsets, QBasic projectile coordinates, rotation frames, and off-screen detection.
+- Unit tests cover city bounds/window bounds, wind range, gorilla rooftop placement, trajectory formula, wind acceleration, spawn offsets, player-2 angle transformation, and off-screen simulation stop behavior.
 
 ## Active decisions and constraints
 
@@ -33,27 +34,26 @@
 
 ## Latest completed task
 
-- Selected task: update repository handoff documentation so `tasks/state.md` stays compact and Git commits carry detailed chronological logs.
-- Changed files: `tasks/repo_agent_prompt.md`, `tasks/task.md`, `tasks/state.md`.
+- Selected task: implement rendering-independent banana trajectory physics and tests for the original QBasic projectile formula.
+- Changed files: `src/physics.rs`, `src/main.rs`, `tasks/task.md`, `tasks/state.md`.
 - Summary:
-  - Documented that `tasks/state.md` is a compact current-state snapshot, not an append-only log.
-  - Added guidance for using `git log` / `git show` when historical context is needed.
-  - Added completion and handoff requirements for reviewing diffs, staging only task-related files, and committing verified work.
-  - Added a repository state/Git workflow section to `tasks/task.md`.
-  - Compacted this file into the new snapshot format.
+  - Added pure shot physics helpers for angle mirroring, banana spawn offsets, trajectory sampling, rotation-frame calculation, off-screen detection, and finite simulation.
+  - Added unit tests for the QBasic formula, wind acceleration, player-2 angle transformation, spawn offsets, and off-screen stopping.
+  - Updated task checklist entries for completed physics/test items.
 - Verification:
-  - Markdown-only documentation update; no Rust build was required for this docs task.
-  - Final diff reviewed with `git diff -- tasks/repo_agent_prompt.md tasks/task.md tasks/state.md`.
-- Commit: subject `Document compact state and git handoff workflow`.
+  - `cargo fmt` passed.
+  - `cargo test` passed: 8 tests.
+  - `cargo check` passed.
+- Commit: `4f00604 Add banana trajectory physics`.
 
 ## Known issues / deferred work
 
-- Uncommitted non-doc changes/build artifacts were present while making this documentation update; this task stages and commits only the related markdown files.
+- Tracked `target/` build artifacts exist from earlier repository history and can become dirty after Cargo commands; avoid staging them for implementation commits.
 - Gameplay input/setup screens are not implemented.
-- Banana physics and trajectory rendering are not implemented.
+- Banana physics is pure/tested but not yet wired into turn input, rendering, collision, explosions, or scoring.
 - Collision detection, sun-hit transitions, explosions, scoring, turn flow, victory dance, game-over flow, and audio effects remain unimplemented.
 - The current intro text overlays the generated scene; this is acceptable for early static-scene verification but may be reorganized when proper setup/menu screens are added.
 
 ## Next recommended task
 
-- Implement rendering-independent banana trajectory physics in `physics.rs` and tests for the original QBasic projectile formula before wiring it into shot input/rendering.
+- Wire the pure banana trajectory into a minimal gameplay/animation state that can render a test shot path, then add geometry-based building collision using the existing city model.
