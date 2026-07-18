@@ -233,6 +233,8 @@ Tasks:
 - [x] Port gorilla placement rules.
 - [x] Implement gorilla drawing with primitives, or create static pixel-art/vector sprite assets.
 - [ ] Implement pose switching for throws and victory dance.
+  - [x] Switch the throwing gorilla pose during the throw animation.
+  - [ ] Implement victory dance pose switching.
 - [x] Define gorilla collision bounds/mask.
 - [ ] Implement gorilla explosion animation.
 
@@ -251,9 +253,9 @@ Tasks:
 
 - [x] Define `Sun { position, radius, mood }`.
 - [x] Render sun body, rays, eyes, and mouth.
-- [ ] Detect when banana enters sun area.
-- [ ] Temporarily switch sun to shocked state.
-- [ ] Reset sun after shot if it was hit.
+- [x] Detect when banana enters sun area.
+- [x] Temporarily switch sun to shocked state.
+- [x] Reset sun after shot if it was hit.
 
 ## Banana and shot physics
 
@@ -349,7 +351,7 @@ QBasic calibrated delay loops are not appropriate in Rust.
 Tasks:
 
 - [ ] Replace busy-wait delay loops with frame timing or async/sleep depending on backend.
-- [ ] Define a fixed timestep or per-frame delta time for projectile animation.
+- [x] Define a fixed timestep or per-frame delta time for projectile animation.
 - [ ] Tune animation speed to feel close to original.
 - [ ] Avoid CPU-burning busy loops.
 
@@ -381,9 +383,9 @@ Tasks:
   - [ ] Skyline appears and varies between rounds.
   - [ ] Gorillas are placed on rooftops.
   - [ ] Wind arrow appears when wind is nonzero.
-  - [ ] Banana follows expected arc.
+  - [x] Banana follows expected arc.
   - [ ] Banana collides with buildings.
-  - [ ] Banana can hit sun and change expression.
+  - [x] Banana can hit sun and change expression.
   - [ ] Banana can hit each gorilla.
   - [ ] Scores update correctly.
   - [ ] Game-over screen appears.
@@ -410,7 +412,7 @@ Tasks:
 - [ ] Collect setup input.
 - [ ] Alternate turns.
 - [ ] Collect angle/velocity.
-- [ ] Simulate/render banana trajectory.
+- [x] Simulate/render banana trajectory.
 - [ ] Detect building collisions.
 
 ### Phase 4: Complete interactions
@@ -443,8 +445,8 @@ Tasks:
 - [x] `DrawGorilla` -> `render::draw_gorilla` or sprite asset generation.
 - [x] `DoSun` -> `render::draw_sun` / `Sun` state.
 - [ ] `DoShot` -> turn input plus shot execution.
-- [ ] `PlotShot` -> projectile simulation and collision.
-- [ ] `DrawBan` -> `render::draw_banana`.
+- [x] `PlotShot` -> projectile simulation and collision.
+- [x] `DrawBan` -> `render::draw_banana`.
 - [ ] `DoExplosion` -> explosion animation.
 - [ ] `ExplodeGorilla` -> gorilla-specific explosion and hit result.
 - [ ] `UpdateScores` -> score logic.

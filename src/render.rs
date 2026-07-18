@@ -8,7 +8,7 @@ use crate::{
     city::City,
     config::Color,
     entities::{ArmPose, Gorilla, Sun, SunMood},
-    game::GameState,
+    game::{ActiveShot, GameState},
 };
 
 pub struct Renderer {
@@ -37,6 +37,9 @@ impl Renderer {
         self.draw_city(&state.city, palette.background, palette.explosion);
         for gorilla in &state.gorillas {
             self.draw_gorilla(gorilla, palette.object, palette.background);
+        }
+        if let Some(active_shot) = &state.active_shot {
+            self.draw_active_shot(active_shot, palette.window, palette.explosion);
         }
 
         self.draw_centered_text("Q B a s i c    G O R I L L A S", 44, 3, palette.text);
@@ -71,7 +74,53 @@ impl Renderer {
             2,
             palette.text,
         );
-        self.draw_centered_text("Press Esc to quit", 326, 2, 0xffff55);
+        self.draw_centered_text(
+            "Press Space to throw a demo banana - Esc quits",
+            326,
+            2,
+            0xffff55,
+        );
+    }
+
+    fn draw_active_shot(
+        &mut self,
+        active_shot: &ActiveShot,
+        banana_color: Color,
+        impact_color: Color,
+    ) {
+        let Some(sample) = active_shot.visible_sample() else {
+            return;
+        };
+        let x = sample.position.x.round() as i32;
+        let y = sample.position.y.round() as i32;
+        self.draw_banana(x, y, sample.rotation_frame, banana_color);
+
+        if active_shot.is_at_last_sample() {
+            self.draw_circle(x + 4, y + 4, 7, impact_color);
+            self.draw_circle(x + 4, y + 4, 4, impact_color);
+        }
+    }
+
+    fn draw_banana(&mut self, x: i32, y: i32, rotation_frame: u8, color: Color) {
+        match rotation_frame % 4 {
+            // Approximate the four small QBasic banana sprites: left, up, down, right.
+            0 => {
+                self.draw_line(x + 7, y + 1, x + 1, y + 4, color);
+                self.draw_line(x + 1, y + 4, x + 7, y + 7, color);
+            }
+            1 => {
+                self.draw_line(x + 1, y + 7, x + 4, y + 1, color);
+                self.draw_line(x + 4, y + 1, x + 7, y + 7, color);
+            }
+            2 => {
+                self.draw_line(x + 1, y + 1, x + 4, y + 7, color);
+                self.draw_line(x + 4, y + 7, x + 7, y + 1, color);
+            }
+            _ => {
+                self.draw_line(x + 1, y + 1, x + 7, y + 4, color);
+                self.draw_line(x + 7, y + 4, x + 1, y + 7, color);
+            }
+        }
     }
 
     fn draw_sun(&mut self, sun: &Sun, color: Color, feature_color: Color) {

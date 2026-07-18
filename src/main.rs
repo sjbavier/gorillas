@@ -13,7 +13,7 @@ use crate::{audio::Audio, config::GameConfig, game::GameState, render::Renderer}
 
 fn main() -> Result<(), minifb::Error> {
     let config = GameConfig::default();
-    let game = GameState::new(config);
+    let mut game = GameState::new(config);
     let audio = Audio::new();
     audio.play_intro();
 
@@ -30,6 +30,10 @@ fn main() -> Result<(), minifb::Error> {
     let mut renderer = Renderer::new(config.screen_width, config.screen_height);
 
     while !input::quit_requested(&window) {
+        if input::demo_shot_requested(&window) {
+            game.start_demo_shot();
+        }
+        game.update_animation();
         renderer.draw(&game);
         window.update_with_buffer(&renderer.buffer, config.screen_width, config.screen_height)?;
     }
