@@ -216,7 +216,13 @@ fn key_to_setup_char(key: Key) -> Option<char> {
 }
 
 pub fn quit_requested(window: &Window) -> bool {
-    !window.is_open() || window.is_key_down(Key::Escape)
+    !window.is_open() || (window.is_key_down(QUIT_KEY) && key_requests_quit(QUIT_KEY))
+}
+
+pub const QUIT_KEY: Key = Key::Escape;
+
+pub fn key_requests_quit(key: Key) -> bool {
+    key == QUIT_KEY
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -414,5 +420,11 @@ mod tests {
                 velocity: 80.0,
             })
         );
+    }
+
+    #[test]
+    fn escape_key_is_the_global_quit_request() {
+        assert!(key_requests_quit(Key::Escape));
+        assert!(!key_requests_quit(Key::Enter));
     }
 }

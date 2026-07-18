@@ -2,18 +2,19 @@
 
 ## Snapshot
 
-- Last updated: 2026-07-18 14:43 EDT
+- Last updated: 2026-07-18 14:51 EDT
 - Working directory: `/home/b4v1n4t0r/rust_projects/gorillas`
-- Current commit: `4e910fc` (`Clean up renderer helper primitives`).
+- Current commit: `Add global escape quit binding` (latest commit for this pass; inspect `git log` for exact hash).
 - Source reference: `GORILLA.BAS`
 - Current backend: windowed 2D via `minifb` (`macroquad` was preferred initially but failed on the available toolchain/dependency set).
-- Latest verified commands: `cargo fmt`, `cargo test` (33 tests), and `cargo check` passed after renderer text/primitive helper cleanup.
+- Latest verified commands: `cargo fmt`, `cargo test` (34 tests), and `cargo check` passed after escape/quit support polish.
 
 ## Current implementation status
 
 - Cargo binary crate exists and builds at fixed EGA-like target resolution 640x350.
 - Module skeletons exist: `main`, `config`, `entities`, `game`, `city`, `physics`, `render`, `input`, and `audio`.
 - Startup shows a QBasic-inspired intro screen, waits for any key, collects setup input, shows a `V = View Intro` / `P = Play Game` menu, and then starts local gameplay.
+- `Esc` is the documented global quit key and is handled in the main loop from intro, setup, menu, gameplay, and game-over screens.
 - Setup input collects Player 1/Player 2 names (blank defaults; 10-char max), fixed round count (blank default 3), and gravity (blank default 9.8), then applies those values to `GameState` before the menu.
 - Game-over screen shows final scores/rounds and accepts any key to return to setup for another match.
 - City skyline generation/rendering is implemented with buildings, windows, wind generation, and wind arrow.
@@ -21,11 +22,11 @@
 - Game state generates a city, places gorillas, creates a sun, tracks current turn, scores, completed rounds, a fixed `round_limit`, active shot animation, generic building-hit shot explosions, gorilla hit explosions, victory dance, and `ScreenState::{Intro, Setup, Menu, Playing, GameOver}`.
 - Local input is separate from rules: setup/menu/key-continue events and per-turn `SubmitShot` commands flow into game state.
 - Renderer draws intro/setup/menu screens, gameplay skyline/wind/sun/gorillas/header/prompts/banana/explosions/victory dance, and final game-over scores.
-- Renderer primitive helpers now cover clear, pixel text, QBasic-style centered text support, line drawing, rectangle outline/fill, circles/arcs, and set/get pixel access; helper behavior has unit-test coverage.
+- Renderer primitive helpers cover clear, pixel text, QBasic-style centered text support, line drawing, rectangle outline/fill, circles/arcs, and set/get pixel access; helper behavior has unit-test coverage.
 - Rendering-independent banana trajectory helpers cover player-2 angle mirroring, EGA spawn offsets, QBasic projectile coordinates, rotation frames, off-screen detection, and geometry-based shot resolution.
 - Animation uses elapsed frame time from `main` and a 0.02-second logical animation step, matching QBasic `Rest .02` shot pacing intent while avoiding busy waits; catch-up work is capped per rendered frame.
 - Audio output is intentionally out of scope for the first playable version. `audio.rs` exposes no-op intro/throw/explosion/gorilla-explosion/victory methods, and `GameState` queues rendering-independent `AudioCue`s for gameplay events.
-- Unit tests cover city bounds/window bounds, wind range, gorilla placement, trajectory formula, wind acceleration, spawn offsets, player-2 angle transform, off-screen stop behavior, shot collision outcomes, active shot creation, sun shock/reset, setup defaults/limits, setup flow state transitions, shot input validation/commands, score mapping, round/game-over flow, game-over continuation, explosions, victory dance, audio cue queuing, delta-time animation accumulation/catch-up capping, and renderer helper primitives.
+- Unit tests cover city bounds/window bounds, wind range, gorilla placement, trajectory formula, wind acceleration, spawn offsets, player-2 angle transform, off-screen stop behavior, shot collision outcomes, active shot creation, sun shock/reset, setup defaults/limits, setup flow state transitions, shot input validation/commands, global quit key mapping, score mapping, round/game-over flow, game-over continuation, explosions, victory dance, audio cue queuing, delta-time animation accumulation/catch-up capping, and renderer helper primitives.
 - `README.md` documents build/run commands, controls, local flow, scope notes, and a manual test checklist for the playable local flow.
 
 ## Active decisions and constraints
@@ -44,18 +45,17 @@
 
 ## Latest completed task
 
-- Selected task: centralize renderer text centering and basic drawing primitive helpers so the renderer checklist can be closed confidently.
-- Changed files: `src/render.rs`, `tasks/task.md`, `tasks/state.md`.
+- Selected task: add escape/quit support polish for setup/menu/gameplay input.
+- Changed files: `src/input.rs`, `tasks/task.md`, `tasks/state.md`.
 - Summary:
-  - Added shared font-size/text-row constants plus helper methods for centered text X calculation, QBasic-style one-based text row mapping, text width, and pixel access.
-  - Hardened rectangle-outline drawing against empty dimensions and made glyph drawing use shared font dimensions.
-  - Added renderer unit tests for text centering, row mapping, pixel bounds, and empty rectangle behavior.
-  - Marked implemented renderer primitive/text-centering checklist items and the Phase 5 tests item complete in `tasks/task.md`.
+  - Added a named `QUIT_KEY` constant and `key_requests_quit` helper so the global quit binding is explicit and test-covered.
+  - Kept `quit_requested` as the single main-loop exit check, using window close or `Esc` to quit from every screen.
+  - Marked escape/quit support complete in `tasks/task.md`.
 - Verification:
   - `cargo fmt` passed.
-  - `cargo test` passed: 33 tests.
+  - `cargo test` passed: 34 tests.
   - `cargo check` passed.
-- Commit: `4e910fc` (`Clean up renderer helper primitives`).
+- Commit: `Add global escape quit binding` (latest commit for this pass; inspect `git log` for exact hash).
 
 ## Known issues / deferred work
 
@@ -68,4 +68,4 @@
 
 ## Next recommended task
 
-- Add escape/quit support polish for setup/menu/gameplay input, then update manual verification notes.
+- Tune color palette mapping toward the original EGA/QBasic look and document any intentional gameplay-faithful deviations.

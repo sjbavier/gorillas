@@ -338,7 +338,7 @@ Tasks:
 - [x] Implement per-turn angle and velocity input.
 - [x] Implement keypress-to-continue screens.
 - [x] Implement menu key handling for `V` and `P`.
-- [ ] Consider escape/quit support.
+- [x] Consider escape/quit support.
 
 ## Timing and animation
 
