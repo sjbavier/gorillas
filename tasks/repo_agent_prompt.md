@@ -6,15 +6,21 @@ You are working in the repository:
 
 Your job is to continue converting the classic QBasic `GORILLA.BAS` game to Rust by using the task/state files in `tasks/` as the source of truth.
 
-## Required files
+## Required files and history
 
 Before doing implementation work, read:
 
 1. `tasks/task.md` — full backlog and conversion plan.
-2. `tasks/state.md` — current implementation state and latest decisions.
+2. `tasks/state.md` — compact current implementation state, latest decisions, and active/next work.
 3. `GORILLA.BAS` — original QBasic source, as needed for the task being implemented.
 
 If Rust source files already exist, inspect the relevant modules before editing.
+
+`tasks/state.md` is intentionally **not** a permanent append-only log. Keep it compact and current. If more historical detail is needed, inspect Git history instead, for example:
+
+- `git log --oneline -5`
+- `git show --stat <commit>`
+- `git show <commit> -- tasks/state.md tasks/task.md src/...`
 
 ## Product direction
 
@@ -71,13 +77,12 @@ RALPH means:
    - If a check cannot be run, record why in `tasks/state.md`.
 
 5. **Hand off**
-   - Update `tasks/state.md` with:
-     - What task was selected.
-     - What was changed.
-     - What checks were run and their results.
-     - Any remaining issues or follow-up tasks.
+   - Compact/update `tasks/state.md` so it reflects the current repository state rather than accumulating an unbounded log.
    - Update `tasks/task.md` checkboxes only for items actually completed and verified.
-   - Summarize the work and next recommended task.
+   - Review the final diff.
+   - After the task is complete, verified, and documented, create a Git commit containing the code/docs changes.
+   - Put the detailed handoff/log-style summary in the Git commit message.
+   - Summarize the work and next recommended task in the final response.
 
 ## Task selection rules
 
@@ -104,43 +109,54 @@ A task is complete only when all are true:
 
 - Code or documentation changes for the selected task are finished.
 - The relevant verification command succeeds, or inability to run it is documented.
-- `tasks/state.md` is updated.
+- `tasks/state.md` is compacted/updated with current state.
 - `tasks/task.md` is updated if checklist items are completed.
+- The final diff has been reviewed.
+- The completed and verified work has been committed to Git.
 - No known regression is left undocumented.
 
-Never say a task is complete just because code was written.
+Never say a task is complete just because code was written. If a Git commit cannot be created, document exactly why in `tasks/state.md` and in the final response.
 
 ## State file requirements
 
-Keep `tasks/state.md` current. Every implementation pass must append or update a section with:
+Keep `tasks/state.md` compact. It should be a current-state handoff document, not an append-only implementation journal. Prefer rewriting/compacting it at the end of each pass so a future agent can quickly understand where the project stands without reading every previous update.
+
+Recommended structure:
 
 ```markdown
-## Update: YYYY-MM-DD HH:MM TZ
+# Current State: Rust Gorillas Port
 
-### Selected task
+## Snapshot
 
-- ...
+- Last updated: YYYY-MM-DD HH:MM TZ
+- Current commit: short git hash, if available
+- Build/test status: latest verified commands
 
-### Changes made
+## Current implementation status
 
-- ...
+- Concise bullets describing what exists now.
 
-### Verification
+## Active decisions and constraints
 
-- Command: `...`
-- Result: Passed/Failed/Not run
-- Notes: ...
+- Backend choice, architecture boundaries, known QBasic quirks, collision strategy, etc.
 
-### Current status
+## Latest completed task
 
-- ...
+- Selected task.
+- Summary of changes.
+- Verification commands and results.
+- Commit hash/message, or why no commit was made.
 
-### Next recommended task
+## Known issues / deferred work
 
-- ...
+- Current limitations and explicitly documented regressions, if any.
+
+## Next recommended task
+
+- One focused next step.
 ```
 
-If you discover design decisions, record them in `state.md` and, if appropriate, update `task.md`.
+Do not keep more than the latest task summary unless older information is still directly relevant. Use Git commits for detailed history. If you discover design decisions, record the current decision in `state.md` and, if appropriate, update `task.md`.
 
 ## Coding guidance
 
@@ -152,6 +168,22 @@ If you discover design decisions, record them in `state.md` and, if appropriate,
 - Avoid busy-wait loops; use backend timing/frame updates.
 - Keep collision strategy documented. Pixel-buffer collision is closest to QBasic, geometry/mask collision may be simpler.
 
+## Git handoff requirements
+
+After verification passes:
+
+1. Run `git status --short` and review the changed files.
+2. Stage only files that belong to the completed task, for example `git add src/... tasks/task.md tasks/state.md`.
+3. Commit the work with a concise subject and a body containing the detailed log-style handoff:
+   - selected task,
+   - changes made,
+   - verification commands/results,
+   - current status,
+   - next recommended task.
+4. Record the commit hash or commit subject in the compact `tasks/state.md`.
+
+Do not commit failing or unverified work. Do not commit unrelated local changes. If the working tree already contains unrelated changes, leave them unstaged and document that in the handoff.
+
 ## Expected final response after each run
 
 Respond with:
@@ -159,5 +191,6 @@ Respond with:
 1. Selected task.
 2. Files changed.
 3. Verification commands and results.
-4. Whether `tasks/state.md` and `tasks/task.md` were updated.
-5. Next recommended task.
+4. Whether `tasks/state.md` and `tasks/task.md` were updated/compacted.
+5. Git commit hash/subject, or why no commit was made.
+6. Next recommended task.

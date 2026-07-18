@@ -12,6 +12,30 @@
 - Preserve the original game feel where practical: skyline generation, gorilla placement, banana trajectory, wind, gravity, scoring, intro/game-over screens, sun reaction, explosions, and victory dance.
 - Replace QBasic-specific graphics, sound, keyboard polling, palette, and timing APIs with Rust equivalents.
 
+## Repository state and Git workflow
+
+To keep agent handoffs efficient as the project grows:
+
+- `tasks/state.md` should be a compact current-state snapshot, not an append-only log.
+- At the end of each verified implementation pass, rewrite/compact `tasks/state.md` to preserve only currently relevant information:
+  - latest status,
+  - active decisions/constraints,
+  - latest completed task summary,
+  - verification status,
+  - next recommended task.
+- Use Git history for detailed chronological logs.
+- After a task is complete and verification passes, stage only related files and create a Git commit.
+- Put detailed log-style handoff information in the commit message body.
+- Future agents may inspect recent history with `git log --oneline -5` and `git show` when more context is needed.
+- If a commit cannot be made, document the reason in `tasks/state.md` and the final response.
+
+Tasks:
+
+- [x] Document compact `tasks/state.md` policy.
+- [x] Document Git commit handoff policy.
+- [x] Compact the existing `tasks/state.md` into the new snapshot format.
+- [ ] Ensure future completed implementation passes are committed after successful verification.
+
 ## Recommended Rust architecture
 
 Design note for future online play:
@@ -145,8 +169,8 @@ Tasks:
   - [ ] Draw text at row/column or pixel coordinates.
   - [ ] Draw line.
   - [ ] Draw rectangle outline/fill.
-  - [ ] Draw circle/arc.
-  - [ ] Fill circle/region as needed.
+  - [x] Draw circle/arc.
+  - [x] Fill circle/region as needed.
   - [ ] Set/get pixel or collision layer value.
 - [ ] Decide collision strategy:
   - [ ] Pixel-color collision like QBasic `POINT`, or
@@ -175,16 +199,16 @@ Behavior to preserve:
 
 Tasks:
 
-- [ ] Define `Building { x, y, width, height, color, windows }`.
-- [ ] Port skyline generation math.
-- [ ] Preserve or intentionally fix the original slope-case quirk; document decision.
-- [ ] Store buildings for rendering and collision.
-- [ ] Generate window rectangles.
-- [ ] Render skyline.
-- [ ] Generate wind using original rules:
-  - [ ] Base wind: random 1..10 minus 5.
-  - [ ] One-third chance to add extra magnitude in same sign direction.
-- [ ] Render wind arrow.
+- [x] Define `Building { x, y, width, height, color, windows }`.
+- [x] Port skyline generation math.
+- [x] Preserve or intentionally fix the original slope-case quirk; document decision.
+- [x] Store buildings for rendering and collision.
+- [x] Generate window rectangles.
+- [x] Render skyline.
+- [x] Generate wind using original rules:
+  - [x] Base wind: random 1..10 minus 5.
+  - [x] One-third chance to add extra magnitude in same sign direction.
+- [x] Render wind arrow.
 
 ## Gorilla placement and drawing
 
@@ -205,11 +229,11 @@ Behavior to preserve:
 
 Tasks:
 
-- [ ] Define `Gorilla { position, player_index, pose }`.
-- [ ] Port gorilla placement rules.
-- [ ] Implement gorilla drawing with primitives, or create static pixel-art/vector sprite assets.
+- [x] Define `Gorilla { position, player_index, pose }`.
+- [x] Port gorilla placement rules.
+- [x] Implement gorilla drawing with primitives, or create static pixel-art/vector sprite assets.
 - [ ] Implement pose switching for throws and victory dance.
-- [ ] Define gorilla collision bounds/mask.
+- [x] Define gorilla collision bounds/mask.
 - [ ] Implement gorilla explosion animation.
 
 ## Sun
@@ -225,8 +249,8 @@ Behavior to preserve:
 
 Tasks:
 
-- [ ] Define `Sun { position, radius, mood }`.
-- [ ] Render sun body, rays, eyes, and mouth.
+- [x] Define `Sun { position, radius, mood }`.
+- [x] Render sun body, rays, eyes, and mouth.
 - [ ] Detect when banana enters sun area.
 - [ ] Temporarily switch sun to shocked state.
 - [ ] Reset sun after shot if it was hit.
@@ -346,10 +370,10 @@ Tasks:
 
 - [ ] Add unit tests for pure logic:
   - [ ] Trajectory coordinate calculations.
-  - [ ] Wind generation range/rules.
+  - [x] Wind generation range/rules.
   - [ ] Score updates including self-hit.
   - [ ] Player 2 angle transformation.
-  - [ ] Building generation does not exceed screen bounds.
+  - [x] Building generation does not exceed screen bounds.
 - [ ] Add deterministic random seed support for repeatable tests.
 - [ ] Add manual test checklist:
   - [ ] Intro appears.
@@ -375,8 +399,8 @@ Tasks:
 
 ### Phase 2: Static scene
 
-- [ ] Render background.
-- [ ] Generate/render skyline.
+- [x] Render background.
+- [x] Generate/render skyline.
 - [ ] Place/render gorillas.
 - [ ] Render sun.
 - [ ] Render score/header text.
@@ -414,7 +438,7 @@ Tasks:
 - [ ] `GetInputs` -> setup input screen.
 - [ ] `GorillaIntro` -> menu/intro animation state.
 - [ ] `SetScreen` -> palette/theme setup.
-- [ ] `MakeCityScape` -> `city::generate_city`.
+- [x] `MakeCityScape` -> `city::generate_city`.
 - [ ] `PlaceGorillas` -> `game::place_gorillas`.
 - [ ] `DrawGorilla` -> `render::draw_gorilla` or sprite asset generation.
 - [ ] `DoSun` -> `render::draw_sun` / `Sun` state.
@@ -443,7 +467,7 @@ Networking is **not** part of the first basic port, but early architecture shoul
 
 - [x] Which graphics backend should be used? Windowed 2D; prefer `macroquad` by default.
 - [ ] Should this be a pixel-perfect-ish port or a gameplay-faithful remake? Current leaning: gameplay-faithful first, with QBasic-style visuals.
-- [ ] Should the original CGA/EGA dual-mode scaling be preserved?
+- [x] Should the original CGA/EGA dual-mode scaling be preserved? Decision: target EGA 640x350 first; CGA scaling is deferred.
 - [ ] Should `NumGames` preserve original fixed-round behavior or become true play-to-N-points?
 - [ ] Is audio required for the first playable Rust version?
 - [ ] Should collision use pixel buffer color sampling or explicit geometry/masks?
