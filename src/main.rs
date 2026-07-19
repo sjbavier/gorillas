@@ -34,7 +34,7 @@ fn main() -> Result<(), minifb::Error> {
         config.screen_height,
         WindowOptions {
             resize: false,
-            scale: Scale::X1,
+            scale: Scale::X2,
             ..WindowOptions::default()
         },
     )?;
