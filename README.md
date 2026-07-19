@@ -16,6 +16,12 @@ Commands:
 cargo run
 ```
 
+For reproducible local scenes while debugging, set `GORILLAS_SEED` to any unsigned 64-bit integer:
+
+```sh
+GORILLAS_SEED=2026 cargo run
+```
+
 Useful verification commands for development:
 
 ```sh

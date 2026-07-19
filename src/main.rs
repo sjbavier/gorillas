@@ -21,7 +21,7 @@ use crate::{
 };
 
 fn main() -> Result<(), minifb::Error> {
-    let config = GameConfig::default();
+    let config = load_config();
     let mut game = GameState::new(config);
     game.screen = ScreenState::Intro;
     game.setup_completed = false;
@@ -111,6 +111,20 @@ fn main() -> Result<(), minifb::Error> {
     }
 
     Ok(())
+}
+
+fn load_config() -> GameConfig {
+    let config = GameConfig::default();
+    match std::env::var("GORILLAS_SEED") {
+        Ok(seed) => match seed.parse::<u64>() {
+            Ok(seed) => config.with_random_seed(seed),
+            Err(error) => {
+                eprintln!("Ignoring invalid GORILLAS_SEED value: {error}");
+                config
+            }
+        },
+        Err(_) => config,
+    }
 }
 
 fn play_audio_cues(audio: &Audio, cues: Vec<AudioCue>) {

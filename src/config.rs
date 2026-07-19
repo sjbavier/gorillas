@@ -67,6 +67,19 @@ pub struct GameConfig {
     pub gravity: f32,
     pub speed_const: u32,
     pub palette: Palette,
+    /// Optional seed for deterministic city/wind/gorilla scene generation.
+    ///
+    /// The original QBasic code calls `RANDOMIZE (TIMER)` before each round.
+    /// Keeping this as `None` preserves non-deterministic local play, while
+    /// tests and debugging can opt into reproducible scenes with a fixed seed.
+    pub random_seed: Option<u64>,
+}
+
+impl GameConfig {
+    pub fn with_random_seed(mut self, seed: u64) -> Self {
+        self.random_seed = Some(seed);
+        self
+    }
 }
 
 impl Default for GameConfig {
@@ -77,6 +90,7 @@ impl Default for GameConfig {
             gravity: 9.8,
             speed_const: SPEED_CONST,
             palette: Palette::qbasic_ega(),
+            random_seed: None,
         }
     }
 }

@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Last updated: 2026-07-18 15:31 EDT
+- Last updated: 2026-07-19 19:19 EDT
 - Working directory: `/home/b4v1n4t0r/rust_projects/gorillas`
-- Current commit: `Map renderer colors through QBasic palette` (latest commit for this pass; inspect `git log` for exact hash).
+- Current commit: latest commit for this pass (`Add deterministic random seed support`; inspect `git log` for exact hash).
 - Source reference: `GORILLA.BAS`
 - Current backend: windowed 2D via `minifb` (`macroquad` was preferred initially but failed on the available toolchain/dependency set).
-- Latest verified commands: `cargo fmt`, `cargo test` (36 tests), and `cargo check` passed after QBasic palette mapping.
+- Latest verified commands: `cargo fmt`, `cargo test` (37 tests), and `cargo check` passed after deterministic random seed support.
 
 ## Current implementation status
 
@@ -20,15 +20,16 @@
 - City skyline generation/rendering is implemented with buildings, windows, wind generation, and wind arrow.
 - Core entities include `Point`, `Bounds`, `ArmPose`, `SunMood`, `ShotResult`, `PlayerCommand::SubmitShot`, `Player`, `Gorilla`, and `Sun`.
 - Game state generates a city, places gorillas, creates a sun, tracks current turn, scores, completed rounds, a fixed `round_limit`, active shot animation, generic building-hit shot explosions, gorilla hit explosions, victory dance, and `ScreenState::{Intro, Setup, Menu, Playing, GameOver}`.
+- Random scene generation defaults to QBasic-like timer entropy. `GameConfig::random_seed` and the `GORILLAS_SEED=<u64>` environment variable allow deterministic city/wind/gorilla scene sequences for tests/debugging.
 - Local input is separate from rules: setup/menu/key-continue events and per-turn `SubmitShot` commands flow into game state.
 - Renderer draws intro/setup/menu screens, gameplay skyline/wind/sun/gorillas/header/prompts/banana/explosions/victory dance, and final game-over scores.
 - Renderer primitive helpers cover clear, pixel text, QBasic-style centered text support, line drawing, rectangle outline/fill, circles/arcs, and set/get pixel access; helper behavior has unit-test coverage.
-- Config now centralizes QBasic SCREEN 9/EGA color attributes and semantic palette colors for background, gorilla/object, buildings, lit/unlit windows, sun, explosion/wind, text, prompts, and banana.
+- Config centralizes QBasic SCREEN 9/EGA color attributes and semantic palette colors for background, gorilla/object, buildings, lit/unlit windows, sun, explosion/wind, text, prompts, and banana.
 - Rendering-independent banana trajectory helpers cover player-2 angle mirroring, EGA spawn offsets, QBasic projectile coordinates, rotation frames, off-screen detection, and geometry-based shot resolution.
 - Animation uses elapsed frame time from `main` and a 0.02-second logical animation step, matching QBasic `Rest .02` shot pacing intent while avoiding busy waits; catch-up work is capped per rendered frame.
 - Audio output is intentionally out of scope for the first playable version. `audio.rs` exposes no-op intro/throw/explosion/gorilla-explosion/victory methods, and `GameState` queues rendering-independent `AudioCue`s for gameplay events.
-- Unit tests cover config palette mapping, city bounds/window bounds, wind range, gorilla placement, trajectory formula, wind acceleration, spawn offsets, player-2 angle transform, off-screen stop behavior, shot collision outcomes, active shot creation, sun shock/reset, setup defaults/limits, setup flow state transitions, shot input validation/commands, global quit key mapping, score mapping, round/game-over flow, game-over continuation, explosions, victory dance, audio cue queuing, delta-time animation accumulation/catch-up capping, and renderer helper primitives.
-- `README.md` documents build/run commands, controls, local flow, scope notes, and a manual test checklist for the playable local flow.
+- Unit tests cover config palette/seed behavior, city bounds/window bounds, wind range, deterministic seeded scenes, gorilla placement, trajectory formula, wind acceleration, spawn offsets, player-2 angle transform, off-screen stop behavior, shot collision outcomes, active shot creation, sun shock/reset, setup defaults/limits, setup flow state transitions, shot input validation/commands, global quit key mapping, score mapping, round/game-over flow, game-over continuation, explosions, victory dance, audio cue queuing, delta-time animation accumulation/catch-up capping, and renderer helper primitives.
+- `README.md` documents build/run commands, optional `GORILLAS_SEED`, controls, local flow, scope notes, and a manual test checklist for the playable local flow.
 
 ## Active decisions and constraints
 
@@ -47,18 +48,20 @@
 
 ## Latest completed task
 
-- Selected task: tune color palette mapping toward the original EGA/QBasic look.
-- Changed files: `src/config.rs`, `src/city.rs`, `src/render.rs`, `tasks/task.md`, `tasks/state.md`.
+- Selected task: add deterministic random seed support for repeatable tests.
+- Changed files: `src/config.rs`, `src/game.rs`, `src/main.rs`, `README.md`, `tasks/task.md`, `tasks/state.md`.
 - Summary:
-  - Added QBasic SCREEN 9 attribute constants, a `qbasic_screen9_color` mapper, and semantic `Palette::qbasic_ega` fields.
-  - Routed city building/window generation through semantic palette colors instead of local hard-coded colors.
-  - Routed renderer screen clears, menu gorilla feature color, banana color, prompt/score highlight text, dim text, and alternate gorilla explosion ring color through palette helpers.
-  - Marked palette mapping and `SetScreen` checklist items complete in `tasks/task.md`.
+  - Added optional `GameConfig::random_seed` and `with_random_seed` helper.
+  - Preserved non-deterministic local play by default while using a seeded `StdRng` when configured.
+  - Made `GameState` retain an internal RNG for unseeded round generation, and derive deterministic per-round scenes from `random_seed + completed_rounds` when seeded.
+  - Added `GORILLAS_SEED=<u64>` runtime configuration for reproducible local scenes.
+  - Added a unit test proving matching seeded initial scenes and subsequent rounds.
+  - Marked deterministic random seed support complete in `tasks/task.md`.
 - Verification:
   - `cargo fmt` passed.
-  - `cargo test` passed: 36 tests.
+  - `cargo test` passed: 37 tests.
   - `cargo check` passed.
-- Commit: `Map renderer colors through QBasic palette` (latest commit for this pass; inspect `git log` for exact hash).
+- Commit: latest commit for this pass (`Add deterministic random seed support`; inspect `git log` for exact hash).
 
 ## Known issues / deferred work
 
@@ -71,4 +74,4 @@
 
 ## Next recommended task
 
-- Add deterministic random seed support for repeatable tests and optional reproducible local scenes.
+- Tune animation speed/feel through manual playtesting, using `GORILLAS_SEED` to reproduce the same skyline and shot scenarios while adjusting pacing.

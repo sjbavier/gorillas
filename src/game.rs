@@ -165,11 +165,15 @@ pub struct GameState {
     pub last_shot: Option<ShotResolution>,
     animation_accumulator_seconds: f32,
     pending_audio_cues: Vec<AudioCue>,
+    rng: StdRng,
 }
 
 impl GameState {
     pub fn new(config: GameConfig) -> Self {
-        let mut rng = StdRng::from_entropy();
+        let mut rng = match config.random_seed {
+            Some(seed) => StdRng::seed_from_u64(seed),
+            None => StdRng::from_entropy(),
+        };
         Self::new_with_rng(config, &mut rng)
     }
 
@@ -177,6 +181,10 @@ impl GameState {
         let city = City::generate(&config, rng);
         let gorillas = place_gorillas(&city, rng);
         let sun = Sun::new(config.screen_width);
+        let internal_rng = match config.random_seed {
+            Some(seed) => StdRng::seed_from_u64(seed),
+            None => StdRng::from_entropy(),
+        };
         Self {
             config,
             players: [Player::new(0, "Player 1"), Player::new(1, "Player 2")],
@@ -195,6 +203,7 @@ impl GameState {
             last_shot: None,
             animation_accumulator_seconds: 0.0,
             pending_audio_cues: Vec::new(),
+            rng: internal_rng,
         }
     }
 
@@ -424,9 +433,15 @@ impl GameState {
             return;
         }
 
-        let mut rng = StdRng::from_entropy();
-        self.city = City::generate(&self.config, &mut rng);
-        self.gorillas = place_gorillas(&self.city, &mut rng);
+        if let Some(seed) = self.config.random_seed {
+            let round_seed = seed.wrapping_add(self.completed_rounds as u64);
+            let mut rng = StdRng::seed_from_u64(round_seed);
+            self.city = City::generate(&self.config, &mut rng);
+            self.gorillas = place_gorillas(&self.city, &mut rng);
+        } else {
+            self.city = City::generate(&self.config, &mut self.rng);
+            self.gorillas = place_gorillas(&self.city, &mut self.rng);
+        }
         self.sun = Sun::new(self.config.screen_width);
         self.animation_accumulator_seconds = 0.0;
         self.gorillas
@@ -573,6 +588,34 @@ mod tests {
 
         assert!(left_on_expected_building);
         assert!(right_on_expected_building);
+    }
+
+    #[test]
+    fn fixed_random_seed_reproduces_initial_scene_and_rounds() {
+        let config = GameConfig::default().with_random_seed(2026);
+        let first = GameState::new(config);
+        let second = GameState::new(config);
+
+        assert_eq!(first.city, second.city);
+        assert_eq!(first.gorillas, second.gorillas);
+
+        let mut first = GameState::new(config);
+        let mut second = GameState::new(config);
+        first.screen = ScreenState::Menu;
+        second.screen = ScreenState::Menu;
+        first.start_match();
+        second.start_match();
+
+        assert_eq!(first.city, second.city);
+        assert_eq!(first.gorillas, second.gorillas);
+
+        first.completed_rounds = 1;
+        second.completed_rounds = 1;
+        first.start_next_round();
+        second.start_next_round();
+
+        assert_eq!(first.city, second.city);
+        assert_eq!(first.gorillas, second.gorillas);
     }
 
     #[test]

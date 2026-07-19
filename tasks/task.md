@@ -377,7 +377,7 @@ Tasks:
   - [x] Score updates including self-hit.
   - [x] Player 2 angle transformation.
   - [x] Building generation does not exceed screen bounds.
-- [ ] Add deterministic random seed support for repeatable tests.
+- [x] Add deterministic random seed support for repeatable tests.
 - [x] Add manual test checklist:
   - [ ] Intro appears.
   - [ ] Player setup works with defaults.
