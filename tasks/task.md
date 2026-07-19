@@ -353,7 +353,7 @@ Tasks:
 
 - [x] Replace busy-wait delay loops with frame timing or async/sleep depending on backend.
 - [x] Define a fixed timestep or per-frame delta time for projectile animation.
-- [ ] Tune animation speed to feel close to original.
+- [x] Tune animation speed to feel close to original.
 - [x] Avoid CPU-burning busy loops.
 
 ## Audio
@@ -430,6 +430,7 @@ Tasks:
 
 - [x] Add audio or no-op audio stubs.
 - [ ] Tune colors, animation speed, and scaling.
+  - [x] Tune animation timing constants against QBasic `Rest` pacing.
 - [x] Add tests.
 - [x] Document controls and build/run instructions.
 

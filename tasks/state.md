@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Last updated: 2026-07-19 19:19 EDT
+- Last updated: 2026-07-19 19:25 EDT
 - Working directory: `/home/b4v1n4t0r/rust_projects/gorillas`
-- Current commit: latest commit for this pass (`Add deterministic random seed support`; inspect `git log` for exact hash).
+- Current commit: latest commit for this pass (`Tune animation timing against QBasic pacing`; inspect `git log` for exact hash).
 - Source reference: `GORILLA.BAS`
 - Current backend: windowed 2D via `minifb` (`macroquad` was preferred initially but failed on the available toolchain/dependency set).
-- Latest verified commands: `cargo fmt`, `cargo test` (37 tests), and `cargo check` passed after deterministic random seed support.
+- Latest verified commands: `cargo fmt`, `cargo test` (38 tests), and `cargo check` passed after animation timing tuning.
 
 ## Current implementation status
 
@@ -26,9 +26,10 @@
 - Renderer primitive helpers cover clear, pixel text, QBasic-style centered text support, line drawing, rectangle outline/fill, circles/arcs, and set/get pixel access; helper behavior has unit-test coverage.
 - Config centralizes QBasic SCREEN 9/EGA color attributes and semantic palette colors for background, gorilla/object, buildings, lit/unlit windows, sun, explosion/wind, text, prompts, and banana.
 - Rendering-independent banana trajectory helpers cover player-2 angle mirroring, EGA spawn offsets, QBasic projectile coordinates, rotation frames, off-screen detection, and geometry-based shot resolution.
-- Animation uses elapsed frame time from `main` and a 0.02-second logical animation step, matching QBasic `Rest .02` shot pacing intent while avoiding busy waits; catch-up work is capped per rendered frame.
+- Animation uses elapsed frame time from `main` and a 0.02-second logical animation step, matching QBasic `PlotShot` / `Rest .02` shot pacing while avoiding busy waits; catch-up work is capped per rendered frame.
+- Animation timing constants are tuned/documented against QBasic pacing: quick final-banana impact hold, 14-frame generic explosions, 48-frame gorilla explosions, and 80-frame victory dance with 0.2-second pose toggles.
 - Audio output is intentionally out of scope for the first playable version. `audio.rs` exposes no-op intro/throw/explosion/gorilla-explosion/victory methods, and `GameState` queues rendering-independent `AudioCue`s for gameplay events.
-- Unit tests cover config palette/seed behavior, city bounds/window bounds, wind range, deterministic seeded scenes, gorilla placement, trajectory formula, wind acceleration, spawn offsets, player-2 angle transform, off-screen stop behavior, shot collision outcomes, active shot creation, sun shock/reset, setup defaults/limits, setup flow state transitions, shot input validation/commands, global quit key mapping, score mapping, round/game-over flow, game-over continuation, explosions, victory dance, audio cue queuing, delta-time animation accumulation/catch-up capping, and renderer helper primitives.
+- Unit tests cover config palette/seed behavior, city bounds/window bounds, wind range, deterministic seeded scenes, gorilla placement, trajectory formula, wind acceleration, spawn offsets, player-2 angle transform, off-screen stop behavior, shot collision outcomes, active shot creation, sun shock/reset, setup defaults/limits, setup flow state transitions, shot input validation/commands, global quit key mapping, score mapping, round/game-over flow, game-over continuation, explosions, victory dance, audio cue queuing, delta-time animation accumulation/catch-up capping, animation timing constants, and renderer helper primitives.
 - `README.md` documents build/run commands, optional `GORILLAS_SEED`, controls, local flow, scope notes, and a manual test checklist for the playable local flow.
 
 ## Active decisions and constraints
@@ -48,30 +49,31 @@
 
 ## Latest completed task
 
-- Selected task: add deterministic random seed support for repeatable tests.
-- Changed files: `src/config.rs`, `src/game.rs`, `src/main.rs`, `README.md`, `tasks/task.md`, `tasks/state.md`.
+- Selected task: tune animation speed/feel through QBasic pacing review.
+- Changed files: `src/game.rs`, `tasks/task.md`, `tasks/state.md`.
 - Summary:
-  - Added optional `GameConfig::random_seed` and `with_random_seed` helper.
-  - Preserved non-deterministic local play by default while using a seeded `StdRng` when configured.
-  - Made `GameState` retain an internal RNG for unseeded round generation, and derive deterministic per-round scenes from `random_seed + completed_rounds` when seeded.
-  - Added `GORILLAS_SEED=<u64>` runtime configuration for reproducible local scenes.
-  - Added a unit test proving matching seeded initial scenes and subsequent rounds.
-  - Marked deterministic random seed support complete in `tasks/task.md`.
+  - Documented the 0.02-second logical animation step as the QBasic `PlotShot` / `Rest .02` equivalent.
+  - Reduced final banana impact hold from 20 frames to 4 frames so explosions trigger promptly after impact while preserving a brief visible final sample.
+  - Tuned generic building explosion duration to 14 frames and retained the SCREEN 9 radius-7 behavior from `DoExplosion`.
+  - Tuned gorilla explosion timing to 48 frames with a 16-frame growth phase to better approximate QBasic `ExplodeGorilla` drawing loops.
+  - Tuned victory dance to eight 0.2-second pose intervals (80 frames at 50 Hz), matching QBasic `VictoryDance`.
+  - Added a unit test locking these timing constants to their documented QBasic pacing basis.
+  - Marked animation speed tuning complete in `tasks/task.md` while leaving broader color/scaling polish open.
 - Verification:
   - `cargo fmt` passed.
-  - `cargo test` passed: 37 tests.
+  - `cargo test` passed: 38 tests.
   - `cargo check` passed.
-- Commit: latest commit for this pass (`Add deterministic random seed support`; inspect `git log` for exact hash).
+- Commit: latest commit for this pass (`Tune animation timing against QBasic pacing`; inspect `git log` for exact hash).
 
 ## Known issues / deferred work
 
 - Tracked `target/` build artifacts exist from earlier repository history and become dirty after Cargo commands; avoid staging them for implementation commits.
 - Setup text input currently supports uppercase letters, digits, spaces, and decimal points; shifted punctuation/lowercase/numpad edge cases may need polish.
 - The menu's `V = View Intro` returns to the text intro rather than reproducing the full original gorilla musical intro animation.
-- Animation uses QBasic-inspired logical pacing, but feel still needs manual tuning.
 - Building explosions are visual only; they do not yet remove/damage city geometry.
+- Timing constants were tuned by source review and automated tests in this environment; visual feel should still be manually playtested in a window.
 - Audio output is still silent by design.
 
 ## Next recommended task
 
-- Tune animation speed/feel through manual playtesting, using `GORILLAS_SEED` to reproduce the same skyline and shot scenarios while adjusting pacing.
+- Perform a manual playable-flow pass with a fixed `GORILLAS_SEED`, update the manual checklist for intro/setup/skyline/gorillas/wind/building/gorilla collisions/scores, and address the first observed gameplay polish issue.

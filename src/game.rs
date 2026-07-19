@@ -26,6 +26,9 @@ pub enum AudioCue {
     Victory,
 }
 
+/// Logical animation step. QBasic `PlotShot` calls `Rest .02` once per
+/// trajectory sample, so the Rust animation advances at the same 50 Hz pace
+/// while rendering remains frame-rate independent.
 pub const ANIMATION_FRAME_SECONDS: f32 = 0.02;
 const MAX_ANIMATION_STEPS_PER_UPDATE: u8 = 8;
 
@@ -61,8 +64,10 @@ pub struct ShotExplosion {
 }
 
 impl VictoryDance {
-    const TOTAL_FRAMES: u8 = 48;
-    const POSE_TOGGLE_FRAMES: u8 = 8;
+    /// QBasic `VictoryDance` alternates left/right arm sprites four times,
+    /// sleeping `.2` seconds between poses: eight poses at 0.2s each.
+    const TOTAL_FRAMES: u8 = 80;
+    const POSE_TOGGLE_FRAMES: u8 = 10;
 
     fn new(winner_index: usize) -> Self {
         Self {
@@ -88,8 +93,11 @@ impl VictoryDance {
 }
 
 impl GorillaExplosion {
-    pub const TOTAL_FRAMES: u8 = 36;
-    pub const GROW_FRAMES: u8 = 12;
+    /// QBasic `ExplodeGorilla` runs about 48 tiny drawing steps with short
+    /// busy-loop pauses. At the shared 50 Hz step this produces a snappier,
+    /// closer direct-hit burst than the previous long placeholder.
+    pub const TOTAL_FRAMES: u8 = 48;
+    pub const GROW_FRAMES: u8 = 16;
 
     fn new(victim_index: usize, scoring_player_index: usize) -> Self {
         Self {
@@ -112,7 +120,10 @@ impl GorillaExplosion {
 }
 
 impl ShotExplosion {
-    pub const TOTAL_FRAMES: u8 = 18;
+    /// QBasic `DoExplosion` grows a SCREEN 9 radius of `ScrHeight / 50` (7 px)
+    /// in 0.5-pixel increments, then erases it with `Rest .005` between shrink
+    /// rings. Map that to seven grow and seven shrink frames at the global step.
+    pub const TOTAL_FRAMES: u8 = 14;
     pub const MAX_RADIUS: i32 = 7;
 
     fn new(position: crate::entities::Point) -> Self {
@@ -135,7 +146,11 @@ impl ShotExplosion {
 }
 
 impl ActiveShot {
-    const IMPACT_HOLD_FRAMES: u8 = 20;
+    /// Keep the last banana sample briefly visible before triggering the impact
+    /// effect. QBasic transitions immediately to the explosion after impact;
+    /// this small pause lets the minifb renderer show the final sample without
+    /// adding the noticeably long delay that a 20-frame hold caused.
+    const IMPACT_HOLD_FRAMES: u8 = 4;
 
     pub fn visible_sample(&self) -> Option<TrajectoryPoint> {
         self.samples.get(self.current_sample).copied()
@@ -901,6 +916,18 @@ mod tests {
             state.update_animation();
         }
         assert_eq!(state.gorillas[1].pose, ArmPose::RightUp);
+    }
+
+    #[test]
+    fn animation_timing_constants_match_qbasic_pacing() {
+        assert_eq!(ANIMATION_FRAME_SECONDS, 0.02);
+        assert_eq!(ActiveShot::IMPACT_HOLD_FRAMES, 4);
+        assert_eq!(ShotExplosion::TOTAL_FRAMES, 14);
+        assert_eq!(ShotExplosion::MAX_RADIUS, 7);
+        assert_eq!(GorillaExplosion::TOTAL_FRAMES, 48);
+        assert_eq!(GorillaExplosion::GROW_FRAMES, 16);
+        assert_eq!(VictoryDance::TOTAL_FRAMES, 80);
+        assert_eq!(VictoryDance::POSE_TOGGLE_FRAMES, 10);
     }
 
     #[test]
