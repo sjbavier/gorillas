@@ -6,7 +6,7 @@ use std::f32::consts::PI;
 
 use crate::{
     city::City,
-    config::Color,
+    config::{scl, Color},
     entities::{ArmPose, Gorilla, Sun, SunMood},
     game::{ActiveShot, GameState, GorillaExplosion, ScreenState, ShotExplosion},
     input::{SetupField, SetupInputState, ShotInputField, ShotInputState},
@@ -353,26 +353,31 @@ impl Renderer {
 
     fn draw_sun(&mut self, sun: &Sun, color: Color, feature_color: Color) {
         let (x, y) = sun.center;
-        self.draw_line(x - 20, y, x + 20, y, color);
-        self.draw_line(x, y - 15, x, y + 15, color);
-        self.draw_line(x - 15, y - 10, x + 15, y + 10, color);
-        self.draw_line(x - 15, y + 10, x + 15, y - 10, color);
-        self.draw_line(x - 8, y - 13, x + 8, y + 13, color);
-        self.draw_line(x - 8, y + 13, x + 8, y - 13, color);
-        self.draw_line(x - 18, y - 5, x + 18, y + 5, color);
-        self.draw_line(x - 18, y + 5, x + 18, y - 5, color);
+        let mode = sun.screen_mode;
+        for (ray_x, ray_y) in Sun::ray_lengths_for_mode(mode) {
+            if ray_x == 0 {
+                self.draw_line(x, y - ray_y, x, y + ray_y, color);
+            } else if ray_y == 0 {
+                self.draw_line(x - ray_x, y, x + ray_x, y, color);
+            } else {
+                self.draw_line(x - ray_x, y - ray_y, x + ray_x, y + ray_y, color);
+                self.draw_line(x - ray_x, y + ray_y, x + ray_x, y - ray_y, color);
+            }
+        }
         self.fill_circle(x, y, sun.radius, color);
         self.draw_circle(x, y, sun.radius, color);
 
         match sun.mood {
-            SunMood::Happy => self.draw_arc(x, y, 8, 210.0, 330.0, feature_color),
+            SunMood::Happy => self.draw_arc(x, y, scl(8.0, mode), 210.0, 330.0, feature_color),
             SunMood::Shocked => {
-                self.fill_circle(x, y + 5, 3, feature_color);
-                self.draw_circle(x, y + 5, 3, feature_color);
+                let mouth_y = y + scl(5.0, mode);
+                let mouth_radius = scl(2.9, mode);
+                self.fill_circle(x, mouth_y, mouth_radius, feature_color);
+                self.draw_circle(x, mouth_y, mouth_radius, feature_color);
             }
         }
-        self.fill_circle(x - 3, y - 2, 1, feature_color);
-        self.fill_circle(x + 3, y - 2, 1, feature_color);
+        self.fill_circle(x - scl(3.0, mode), y - scl(2.0, mode), 1, feature_color);
+        self.fill_circle(x + scl(3.0, mode), y - scl(2.0, mode), 1, feature_color);
     }
 
     fn draw_gorilla(&mut self, gorilla: &Gorilla, color: Color, feature_color: Color) {

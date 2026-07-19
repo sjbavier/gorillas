@@ -194,8 +194,8 @@ impl GameState {
 
     pub fn new_with_rng(config: GameConfig, rng: &mut impl Rng) -> Self {
         let city = City::generate(&config, rng);
-        let gorillas = place_gorillas(&city, rng);
-        let sun = Sun::new(config.screen_width);
+        let gorillas = place_gorillas(&city, rng, config.screen_mode);
+        let sun = Sun::new_for_mode(config.screen_width, config.screen_mode);
         let internal_rng = match config.random_seed {
             Some(seed) => StdRng::seed_from_u64(seed),
             None => StdRng::from_entropy(),
@@ -452,12 +452,12 @@ impl GameState {
             let round_seed = seed.wrapping_add(self.completed_rounds as u64);
             let mut rng = StdRng::seed_from_u64(round_seed);
             self.city = City::generate(&self.config, &mut rng);
-            self.gorillas = place_gorillas(&self.city, &mut rng);
+            self.gorillas = place_gorillas(&self.city, &mut rng, self.config.screen_mode);
         } else {
             self.city = City::generate(&self.config, &mut self.rng);
-            self.gorillas = place_gorillas(&self.city, &mut self.rng);
+            self.gorillas = place_gorillas(&self.city, &mut self.rng, self.config.screen_mode);
         }
-        self.sun = Sun::new(self.config.screen_width);
+        self.sun = Sun::new_for_mode(self.config.screen_width, self.config.screen_mode);
         self.animation_accumulator_seconds = 0.0;
         self.gorillas
             .iter_mut()
@@ -546,7 +546,11 @@ fn samples_through_resolution(
 
 /// Place gorillas on the second or third building from each edge, matching the
 /// original QBasic `PlaceGorillas` intent while storing deterministic scene data.
-pub fn place_gorillas(city: &City, rng: &mut impl Rng) -> [Gorilla; 2] {
+pub fn place_gorillas(
+    city: &City,
+    rng: &mut impl Rng,
+    screen_mode: crate::config::ScreenMode,
+) -> [Gorilla; 2] {
     assert!(
         city.buildings.len() >= 4,
         "city generation must produce enough buildings for gorilla placement"
@@ -560,14 +564,18 @@ pub fn place_gorillas(city: &City, rng: &mut impl Rng) -> [Gorilla; 2] {
         .max(left_index + 1);
 
     [
-        gorilla_on_building(0, &city.buildings[left_index]),
-        gorilla_on_building(1, &city.buildings[right_index]),
+        gorilla_on_building(0, &city.buildings[left_index], screen_mode),
+        gorilla_on_building(1, &city.buildings[right_index], screen_mode),
     ]
 }
 
-fn gorilla_on_building(player_index: usize, building: &crate::city::Building) -> Gorilla {
-    let x = building.x + building.width / 2 - Gorilla::X_ADJUST;
-    let y = building.y - Gorilla::Y_ADJUST;
+fn gorilla_on_building(
+    player_index: usize,
+    building: &crate::city::Building,
+    screen_mode: crate::config::ScreenMode,
+) -> Gorilla {
+    let x = building.x + building.width / 2 - Gorilla::x_adjust_for_mode(screen_mode);
+    let y = building.y - Gorilla::y_adjust_for_mode(screen_mode);
     Gorilla::new(player_index, x, y)
 }
 
@@ -593,13 +601,16 @@ mod tests {
         assert!(left.position.y >= 0);
         assert!(right.position.y >= 0);
 
-        let left_on_expected_building = state.city.buildings[1..=2]
-            .iter()
-            .any(|building| left.position.y + Gorilla::Y_ADJUST == building.y);
+        let left_on_expected_building = state.city.buildings[1..=2].iter().any(|building| {
+            left.position.y + Gorilla::y_adjust_for_mode(config.screen_mode) == building.y
+        });
         let last = state.city.buildings.len() - 1;
-        let right_on_expected_building = state.city.buildings[last - 2..=last - 1]
-            .iter()
-            .any(|building| right.position.y + Gorilla::Y_ADJUST == building.y);
+        let right_on_expected_building =
+            state.city.buildings[last - 2..=last - 1]
+                .iter()
+                .any(|building| {
+                    right.position.y + Gorilla::y_adjust_for_mode(config.screen_mode) == building.y
+                });
 
         assert!(left_on_expected_building);
         assert!(right_on_expected_building);

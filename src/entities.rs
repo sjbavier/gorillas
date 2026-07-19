@@ -1,5 +1,7 @@
 //! Core data types that are independent from rendering and local input.
 
+use crate::config::{scl, ScreenMode};
+
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Point {
@@ -76,15 +78,20 @@ pub struct Gorilla {
 impl Gorilla {
     pub const SPRITE_WIDTH: i32 = 30;
     pub const SPRITE_HEIGHT: i32 = 30;
-    pub const X_ADJUST: i32 = 14;
-    pub const Y_ADJUST: i32 = 30;
-
     pub const fn new(player_index: usize, x: i32, y: i32) -> Self {
         Self {
             position: Bounds::new(x, y, Self::SPRITE_WIDTH, Self::SPRITE_HEIGHT),
             player_index,
             pose: ArmPose::Down,
         }
+    }
+
+    pub fn x_adjust_for_mode(mode: ScreenMode) -> i32 {
+        scl(14.0, mode)
+    }
+
+    pub fn y_adjust_for_mode(mode: ScreenMode) -> i32 {
+        scl(30.0, mode)
     }
 
     /// Anchor used by the original `DrawGorilla(x, y, arms)` routine.
@@ -98,15 +105,27 @@ pub struct Sun {
     pub center: (i32, i32),
     pub radius: i32,
     pub mood: SunMood,
+    pub screen_mode: ScreenMode,
 }
 
 impl Sun {
-    pub const fn new(screen_width: usize) -> Self {
+    pub fn new_for_mode(screen_width: usize, mode: ScreenMode) -> Self {
         Self {
-            center: (screen_width as i32 / 2, 25),
-            radius: 12,
+            center: (screen_width as i32 / 2, scl(25.0, mode)),
+            radius: scl(12.0, mode),
             mood: SunMood::Happy,
+            screen_mode: mode,
         }
+    }
+
+    pub fn ray_lengths_for_mode(mode: ScreenMode) -> [(i32, i32); 5] {
+        [
+            (scl(20.0, mode), 0),
+            (0, scl(15.0, mode)),
+            (scl(15.0, mode), scl(10.0, mode)),
+            (scl(8.0, mode), scl(13.0, mode)),
+            (scl(18.0, mode), scl(5.0, mode)),
+        ]
     }
 
     #[allow(dead_code)]

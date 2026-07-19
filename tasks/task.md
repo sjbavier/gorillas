@@ -177,7 +177,7 @@ Tasks:
   - [x] Geometry-based collision against buildings/gorillas/sun.
 - [x] Implement text centering equivalent to `Center`.
 - [x] Implement color palette mapping for background, gorillas, buildings, windows, sun, explosion, banana.
-- [ ] Implement screen scaling equivalent to `Scl(n)` if supporting multiple resolutions.
+- [x] Implement screen scaling equivalent to `Scl(n)` if supporting multiple resolutions.
 
 ## City skyline generation
 
@@ -456,7 +456,7 @@ Tasks:
 - [x] `UpdateScores` -> score logic.
 - [x] `VictoryDance` -> winner animation.
 - [x] `Rest` -> sleep/frame delay.
-- [ ] `Scl` -> scaling helper if needed.
+- [x] `Scl` -> scaling helper if needed.
 
 ## Future online/network play considerations
 

@@ -365,7 +365,14 @@ mod tests {
         let gorillas = test_gorillas();
         let params = ShotParams::new(banana_spawn(&gorillas[0]), 45.0, 1.0, 0, &config);
 
-        let resolution = resolve_shot(0, params, &config, &test_city(), &gorillas, &Sun::new(640));
+        let resolution = resolve_shot(
+            0,
+            params,
+            &config,
+            &test_city(),
+            &gorillas,
+            &Sun::new_for_mode(640, config.screen_mode),
+        );
 
         assert_eq!(resolution.result, ShotResult::HitSelf);
         assert_eq!(
@@ -380,7 +387,14 @@ mod tests {
         let gorillas = test_gorillas();
         let params = ShotParams::new(Point::new(90.0, 310.0), 0.0, 30.0, 0, &config);
 
-        let resolution = resolve_shot(0, params, &config, &test_city(), &gorillas, &Sun::new(640));
+        let resolution = resolve_shot(
+            0,
+            params,
+            &config,
+            &test_city(),
+            &gorillas,
+            &Sun::new_for_mode(640, config.screen_mode),
+        );
 
         assert_eq!(resolution.result, ShotResult::Miss);
         assert_eq!(
@@ -395,7 +409,14 @@ mod tests {
         let gorillas = test_gorillas();
         let params = ShotParams::new(Point::new(490.0, 290.0), 0.0, 30.0, 0, &config);
 
-        let resolution = resolve_shot(0, params, &config, &test_city(), &gorillas, &Sun::new(640));
+        let resolution = resolve_shot(
+            0,
+            params,
+            &config,
+            &test_city(),
+            &gorillas,
+            &Sun::new_for_mode(640, config.screen_mode),
+        );
 
         assert_eq!(resolution.result, ShotResult::HitPlayer(1));
         assert_eq!(
@@ -408,7 +429,7 @@ mod tests {
     fn shot_records_sun_passage_without_stopping_trajectory() {
         let config = GameConfig::default();
         let gorillas = test_gorillas();
-        let sun = Sun::new(640);
+        let sun = Sun::new_for_mode(640, config.screen_mode);
         let params = ShotParams::new(Point::new(320.0, 25.0), 90.0, 20.0, 0, &config);
 
         let resolution = resolve_shot(0, params, &config, &test_city(), &gorillas, &sun);
@@ -426,7 +447,14 @@ mod tests {
         let gorillas = test_gorillas();
         let params = ShotParams::new(Point::new(10.0, 50.0), 0.0, 300.0, 0, &config);
 
-        let resolution = resolve_shot(0, params, &config, &test_city(), &gorillas, &Sun::new(640));
+        let resolution = resolve_shot(
+            0,
+            params,
+            &config,
+            &test_city(),
+            &gorillas,
+            &Sun::new_for_mode(640, config.screen_mode),
+        );
 
         assert_eq!(resolution.result, ShotResult::Miss);
         assert_eq!(

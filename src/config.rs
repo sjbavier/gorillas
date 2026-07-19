@@ -9,6 +9,15 @@ pub const SCREEN_HEIGHT: usize = 350;
 
 pub type Color = u32;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ScreenMode {
+    /// Original QBasic EGA/SCREEN 9 dimensions: 640x350.
+    Ega,
+    /// Original QBasic CGA dimensions: 320x200. Deferred for gameplay, but
+    /// modeled here so QBasic `Scl` behavior is explicit and testable.
+    Cga,
+}
+
 // Original QBasic SCREEN 9 color attributes used by GORILLA.BAS.
 pub const BACK_ATTR: u8 = 0;
 #[allow(dead_code)]
@@ -67,6 +76,7 @@ pub struct GameConfig {
     pub gravity: f32,
     pub speed_const: u32,
     pub palette: Palette,
+    pub screen_mode: ScreenMode,
     /// Optional seed for deterministic city/wind/gorilla scene generation.
     ///
     /// The original QBasic code calls `RANDOMIZE (TIMER)` before each round.
@@ -90,6 +100,7 @@ impl Default for GameConfig {
             gravity: 9.8,
             speed_const: SPEED_CONST,
             palette: Palette::qbasic_ega(),
+            screen_mode: ScreenMode::Ega,
             random_seed: None,
         }
     }
@@ -97,6 +108,29 @@ impl Default for GameConfig {
 
 pub const fn rgb(red: u8, green: u8, blue: u8) -> Color {
     ((red as Color) << 16) | ((green as Color) << 8) | blue as Color
+}
+
+/// Scale a QBasic sprite/geometry constant using the original `Scl(n)` rules.
+///
+/// In EGA mode this rounds to the nearest integer (`CINT(n)` in QBasic); in
+/// CGA mode fractional sentinels are reduced by one before halving so callers
+/// can express values such as `2.9 -> 1` while preserving `3 -> 2`. The current
+/// game targets EGA, but keeping this helper centralized documents and tests the
+/// deferred CGA path rather than scattering raw magic numbers.
+pub fn scl(n: f32, mode: ScreenMode) -> i32 {
+    let mut value = n;
+    if mode == ScreenMode::Cga && value.fract() != 0.0 {
+        value -= 1.0;
+    }
+
+    match mode {
+        ScreenMode::Ega => qbasic_cint(value),
+        ScreenMode::Cga => qbasic_cint(value / 2.0 + 0.1),
+    }
+}
+
+fn qbasic_cint(value: f32) -> i32 {
+    value.round() as i32
 }
 
 pub const fn qbasic_screen9_color(attribute: u8) -> Color {
@@ -147,5 +181,25 @@ mod tests {
             qbasic_screen9_color(UNLIT_WINDOW_ATTR)
         );
         assert_eq!(palette.building_colors.len(), BUILDING_ATTRS.len());
+    }
+
+    #[test]
+    fn default_config_targets_original_ega_mode() {
+        let config = GameConfig::default();
+        assert_eq!(config.screen_mode, ScreenMode::Ega);
+        assert_eq!(config.screen_width, SCREEN_WIDTH);
+        assert_eq!(config.screen_height, SCREEN_HEIGHT);
+    }
+
+    #[test]
+    fn scl_matches_qbasic_ega_and_cga_scaling_examples() {
+        assert_eq!(scl(25.0, ScreenMode::Ega), 25);
+        assert_eq!(scl(2.9, ScreenMode::Ega), 3);
+        assert_eq!(scl(4.9, ScreenMode::Ega), 5);
+
+        assert_eq!(scl(25.0, ScreenMode::Cga), 13);
+        assert_eq!(scl(3.0, ScreenMode::Cga), 2);
+        assert_eq!(scl(2.9, ScreenMode::Cga), 1);
+        assert_eq!(scl(-4.0, ScreenMode::Cga), -2);
     }
 }

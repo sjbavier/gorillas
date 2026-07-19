@@ -1,7 +1,7 @@
 # Gorillas (Rust Port)
 
 A local, windowed Rust port of the classic QBasic `GORILLA.BAS` artillery game.
-The current implementation targets the original EGA-style `640x350` playfield and uses `minifb` for 2D window/input handling.
+The current implementation targets the original EGA-style `640x350` playfield and uses `minifb` for 2D window/input handling. QBasic `Scl(n)` scaling behavior is centralized in code for future CGA support, but alternate resolutions are not exposed yet.
 
 ## Build and run
 
